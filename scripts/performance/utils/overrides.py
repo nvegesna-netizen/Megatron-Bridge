@@ -225,13 +225,6 @@ def set_workload_base_configs(cfg: ConfigContainer, settings: WorkloadBaseConfig
     cfg.train.global_batch_size = settings.global_batch_size
     cfg.train.micro_batch_size = settings.micro_batch_size
 
-    if cfg.comm_overlap is not None:
-        if getattr(cfg.comm_overlap, 'tp_comm_overlap', False) and settings.tensor_model_parallel_size < 2:
-            cfg.comm_overlap.tp_comm_overlap = False
-        if getattr(cfg.comm_overlap, 'overlap_moe_expert_parallel_comm', False) and settings.expert_model_parallel_size < 2:
-            cfg.comm_overlap.overlap_moe_expert_parallel_comm = False
-            cfg.comm_overlap.delay_wgrad_compute = False
-
     _set_megatron_fsdp_overrides(cfg, use_megatron_fsdp=settings.use_megatron_fsdp)
     _set_nccl_ub_overrides(cfg, nccl_ub=settings.nccl_ub)
     _set_cuda_graph_overrides(
