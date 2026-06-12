@@ -34,6 +34,16 @@ def set_gpt_oss_common_configs(cfg: ConfigContainer) -> None:
     cfg.ddp.grad_reduce_in_fp32 = False
     cfg.model.moe_router_fusion = True
     cfg.model.moe_router_force_load_balancing = True
+    cfg.model.use_te_rng_tracker = True
+    cfg.rng.te_rng_tracker = True
+    if cfg.mixed_precision.fp8 is not None:
+        cfg.model.moe_router_padding_for_fp8 = True
+    cfg.checkpoint.fully_parallel_load = True
+    cfg.checkpoint.load_optim = False
+    cfg.model.attention_backend = "auto"
+    cfg.model.tp_only_amax_red = True
+    if cfg.mixed_precision.fp8 is not None or cfg.mixed_precision.fp4 is not None:
+        cfg.optimizer.adam_eps = 1e-5
 
 
 def set_full_iter_cg_configs(cfg: ConfigContainer) -> None:
@@ -398,6 +408,30 @@ def gpt_oss_20b_pretrain_config_vr200(
     return cfg
 
 
+def get_gpt_oss_120b_precision_config(compute_dtype: str):
+    """Get precision config for GPT-OSS 120B with stability overrides.
+
+    Mirrors get_gpt_oss_20b_precision_config: disables param-in-quantized-format storage
+    (known unstable at scale) and adds BF16 boundary layers for NVFP4 and FP8_CS.
+    """
+    precision_config = get_precision_config(compute_dtype)
+    precision_config.fp4_param = False
+    precision_config.fp4_param_gather = False
+    precision_config.fp8_param = False
+    precision_config.fp8_param_gather = False
+    precision_config.reuse_grad_buf_for_mxfp8_param_ag = False
+    if compute_dtype == "fp8_mx":
+        precision_config.first_last_layers_bf16 = False
+        precision_config.num_layers_at_start_in_bf16 = 0
+    elif compute_dtype == "fp8_cs":
+        precision_config.first_last_layers_bf16 = True
+    elif compute_dtype == "nvfp4":
+        precision_config.first_last_layers_bf16 = True
+        precision_config.num_layers_at_start_in_bf16 = 0
+        precision_config.num_layers_at_end_in_bf16 = 4
+    return precision_config
+
+
 def gpt_oss_120b_pretrain_config_gb300(
     precision: str = "bf16", mock: bool = True, config_variant: str = "v1"
 ) -> ConfigContainer:
@@ -410,7 +444,7 @@ def gpt_oss_120b_pretrain_config_gb300(
         task="pretrain",
         config_variant=config_variant,
     )
-    precision_config = get_precision_config(precision)
+    precision_config = get_gpt_oss_120b_precision_config(precision)
 
     cfg = gpt_oss_120b_pretrain_config()
     cfg.mixed_precision = precision_config
@@ -440,7 +474,7 @@ def gpt_oss_120b_pretrain_config_gb200(
         task="pretrain",
         config_variant=config_variant,
     )
-    precision_config = get_precision_config(precision)
+    precision_config = get_gpt_oss_120b_precision_config(precision)
 
     cfg = gpt_oss_120b_pretrain_config()
     cfg.mixed_precision = precision_config
@@ -472,7 +506,7 @@ def gpt_oss_120b_pretrain_config_vr200(
         task="pretrain",
         config_variant=config_variant,
     )
-    precision_config = get_precision_config(precision)
+    precision_config = get_gpt_oss_120b_precision_config(precision)
 
     cfg = gpt_oss_120b_pretrain_config()
     cfg.mixed_precision = precision_config
@@ -498,7 +532,7 @@ def gpt_oss_120b_pretrain_config_b300(
         task="pretrain",
         config_variant=config_variant,
     )
-    precision_config = get_precision_config(precision)
+    precision_config = get_gpt_oss_120b_precision_config(precision)
 
     cfg = gpt_oss_120b_pretrain_config()
     cfg.mixed_precision = precision_config
@@ -525,7 +559,7 @@ def gpt_oss_120b_pretrain_config_b200(
         task="pretrain",
         config_variant=config_variant,
     )
-    precision_config = get_precision_config(precision)
+    precision_config = get_gpt_oss_120b_precision_config(precision)
 
     cfg = gpt_oss_120b_pretrain_config()
     cfg.mixed_precision = precision_config
@@ -552,7 +586,7 @@ def gpt_oss_120b_pretrain_config_h100(
         task="pretrain",
         config_variant=config_variant,
     )
-    precision_config = get_precision_config(precision)
+    precision_config = get_gpt_oss_120b_precision_config(precision)
 
     cfg = gpt_oss_120b_pretrain_config()
     cfg.mixed_precision = precision_config
