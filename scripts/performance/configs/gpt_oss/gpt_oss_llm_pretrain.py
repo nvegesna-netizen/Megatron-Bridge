@@ -36,8 +36,8 @@ def set_gpt_oss_common_configs(cfg: ConfigContainer) -> None:
     cfg.model.moe_router_force_load_balancing = True
     cfg.model.use_te_rng_tracker = True
     cfg.rng.te_rng_tracker = True
-    if cfg.mixed_precision.fp8 is not None:
-        cfg.model.moe_router_padding_for_fp8 = True
+    if cfg.mixed_precision.fp8 is not None or cfg.mixed_precision.fp4 is not None:
+        cfg.model.moe_router_padding_for_quantization = True
     cfg.checkpoint.fully_parallel_load = True
     cfg.checkpoint.load_optim = False
     cfg.model.attention_backend = "auto"
@@ -432,6 +432,13 @@ def get_gpt_oss_120b_precision_config(compute_dtype: str):
     return precision_config
 
 
+def set_gpt_oss_120b_common_configs(cfg: ConfigContainer) -> None:
+    """Set common performance configurations for all GPT-OSS 120B configs."""
+    cfg.model.apply_rope_fusion = False
+    cfg.model.fused_single_qkv_rope = True
+    cfg.model.moe_hybridep_num_sms = 128
+
+
 def gpt_oss_120b_pretrain_config_gb300(
     precision: str = "bf16", mock: bool = True, config_variant: str = "v1"
 ) -> ConfigContainer:
@@ -452,6 +459,7 @@ def gpt_oss_120b_pretrain_config_gb300(
         apply_flex_dispatcher_backend(cfg.model, base_cfg.moe_flex_dispatcher_backend)
     set_gpt_oss_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
+    set_gpt_oss_120b_common_configs(cfg)
 
     if is_full_iteration_cuda_graph(cfg.model):
         set_full_iter_cg_configs(cfg)
@@ -484,6 +492,7 @@ def gpt_oss_120b_pretrain_config_gb200(
     cfg.comm_overlap.tp_comm_overlap = False if precision == "nvfp4" else cfg.comm_overlap.tp_comm_overlap
     set_gpt_oss_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
+    set_gpt_oss_120b_common_configs(cfg)
 
     if is_full_iteration_cuda_graph(cfg.model):
         set_full_iter_cg_configs(cfg)
@@ -516,6 +525,7 @@ def gpt_oss_120b_pretrain_config_vr200(
     cfg.comm_overlap.tp_comm_overlap = False if precision == "nvfp4" else cfg.comm_overlap.tp_comm_overlap
     set_gpt_oss_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
+    set_gpt_oss_120b_common_configs(cfg)
 
     return cfg
 
@@ -540,6 +550,7 @@ def gpt_oss_120b_pretrain_config_b300(
         apply_flex_dispatcher_backend(cfg.model, base_cfg.moe_flex_dispatcher_backend)
     set_gpt_oss_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
+    set_gpt_oss_120b_common_configs(cfg)
 
     if is_full_iteration_cuda_graph(cfg.model):
         set_full_iter_cg_configs(cfg)
@@ -567,6 +578,7 @@ def gpt_oss_120b_pretrain_config_b200(
         apply_flex_dispatcher_backend(cfg.model, base_cfg.moe_flex_dispatcher_backend)
     set_gpt_oss_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
+    set_gpt_oss_120b_common_configs(cfg)
 
     if is_full_iteration_cuda_graph(cfg.model):
         set_full_iter_cg_configs(cfg)
@@ -594,5 +606,6 @@ def gpt_oss_120b_pretrain_config_h100(
         apply_flex_dispatcher_backend(cfg.model, base_cfg.moe_flex_dispatcher_backend)
     set_gpt_oss_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
+    set_gpt_oss_120b_common_configs(cfg)
 
     return cfg
