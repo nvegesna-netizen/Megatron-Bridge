@@ -593,6 +593,8 @@ def gpt_oss_120b_pretrain_config_h100(
     precision: str = "bf16", mock: bool = True, config_variant: str = "v1"
 ) -> ConfigContainer:
     """H100, baseline config."""
+    if precision == "nvfp4":
+        raise ValueError("NVFP4 requires SM100+ (Blackwell); H100 is SM90 and cannot run NVFP4.")
     base_cfg = get_workload_base_config(
         model_family_name="gpt_oss",
         model_recipe_name="gpt_oss_120b",
