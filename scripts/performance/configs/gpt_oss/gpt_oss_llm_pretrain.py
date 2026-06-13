@@ -140,9 +140,9 @@ def gpt_oss_20b_pretrain_config_b300(
         config_variant=config_variant,
     )
     cfg = gpt_oss_20b_pretrain_config()
-    set_workload_base_configs(cfg, base_cfg)
     precision_config = get_gpt_oss_20b_precision_config(precision)
     cfg.mixed_precision = precision_config
+    set_workload_base_configs(cfg, base_cfg)
     if base_cfg.moe_flex_dispatcher_backend is not None:
         apply_flex_dispatcher_backend(cfg.model, base_cfg.moe_flex_dispatcher_backend)
     set_gpt_oss_20b_common_configs(cfg)
@@ -206,9 +206,9 @@ def gpt_oss_20b_pretrain_config_gb200(
         config_variant=config_variant,
     )
     cfg = gpt_oss_20b_pretrain_config()
-    set_workload_base_configs(cfg, base_cfg)
     precision_config = get_gpt_oss_20b_precision_config(precision)
     cfg.mixed_precision = precision_config
+    set_workload_base_configs(cfg, base_cfg)
     if base_cfg.moe_flex_dispatcher_backend is not None:
         apply_flex_dispatcher_backend(cfg.model, base_cfg.moe_flex_dispatcher_backend)
     set_gpt_oss_20b_common_configs(cfg)
@@ -292,9 +292,9 @@ def gpt_oss_20b_pretrain_config_gb300(
         config_variant=config_variant,
     )
     cfg = gpt_oss_20b_pretrain_config()
-    set_workload_base_configs(cfg, base_cfg)
     precision_config = get_gpt_oss_20b_precision_config(precision)
     cfg.mixed_precision = precision_config
+    set_workload_base_configs(cfg, base_cfg)
     if base_cfg.moe_flex_dispatcher_backend is not None:
         apply_flex_dispatcher_backend(cfg.model, base_cfg.moe_flex_dispatcher_backend)
     set_gpt_oss_20b_common_configs(cfg)
@@ -373,9 +373,9 @@ def gpt_oss_20b_pretrain_config_vr200(
         config_variant=config_variant,
     )
     cfg = gpt_oss_20b_pretrain_config()
-    set_workload_base_configs(cfg, base_cfg)
     precision_config = get_gpt_oss_20b_precision_config(precision)
     cfg.mixed_precision = precision_config
+    set_workload_base_configs(cfg, base_cfg)
     if base_cfg.moe_flex_dispatcher_backend is not None:
         apply_flex_dispatcher_backend(cfg.model, base_cfg.moe_flex_dispatcher_backend)
     set_gpt_oss_20b_common_configs(cfg)
