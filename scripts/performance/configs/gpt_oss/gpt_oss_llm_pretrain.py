@@ -36,8 +36,6 @@ def set_gpt_oss_common_configs(cfg: ConfigContainer) -> None:
     cfg.model.moe_router_force_load_balancing = True
     cfg.model.use_te_rng_tracker = True
     cfg.rng.te_rng_tracker = True
-    if cfg.mixed_precision.fp8 is not None or cfg.mixed_precision.fp4 is not None:
-        cfg.model.moe_router_padding_for_quantization = True
     cfg.checkpoint.fully_parallel_load = True
     cfg.checkpoint.load_optim = False
     cfg.model.attention_backend = "auto"
