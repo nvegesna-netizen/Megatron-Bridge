@@ -425,6 +425,8 @@ def get_gpt_oss_120b_precision_config(compute_dtype: str):
         precision_config.num_layers_at_start_in_bf16 = 0
     elif compute_dtype == "fp8_cs":
         precision_config.first_last_layers_bf16 = True
+        precision_config.num_layers_at_start_in_bf16 = 1
+        precision_config.num_layers_at_end_in_bf16 = 1
     elif compute_dtype == "nvfp4":
         precision_config.first_last_layers_bf16 = True
         precision_config.num_layers_at_start_in_bf16 = 0
