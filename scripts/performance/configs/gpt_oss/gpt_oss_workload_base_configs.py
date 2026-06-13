@@ -261,6 +261,7 @@ GPT_OSS_120B_PRETRAIN_CONFIG_B300_NVFP4_V1 = replace(
 )
 GPT_OSS_120B_PRETRAIN_CONFIG_B300_NVFP4_V2 = replace(
     GPT_OSS_120B_PRETRAIN_CONFIG_B300_FP8_MX_V2,
+    fp8_dot_product_attention=None,
     moe_a2a_overlap=True,
 )
 GPT_OSS_120B_PRETRAIN_CONFIG_B200_NVFP4_V1 = replace(
@@ -270,6 +271,7 @@ GPT_OSS_120B_PRETRAIN_CONFIG_B200_NVFP4_V1 = replace(
 )
 GPT_OSS_120B_PRETRAIN_CONFIG_B200_NVFP4_V2 = replace(
     GPT_OSS_120B_PRETRAIN_CONFIG_B200_FP8_MX_V2,
+    fp8_dot_product_attention=None,
     moe_flex_dispatcher_backend="hybridep",
     moe_a2a_overlap=True,
 )

@@ -233,9 +233,6 @@ def gpt_oss_120b_pretrain_config() -> ConfigContainer:
     cfg.model.fine_grained_activation_offloading = False
     cfg.model.offload_modules = None
 
-    # Mixed precision
-    cfg.model.moe_router_padding_for_fp8 = False
-
     # Optimizer precision settings
     cfg.optimizer.use_precision_aware_optimizer = False
     cfg.optimizer.main_grads_dtype = torch.float32
