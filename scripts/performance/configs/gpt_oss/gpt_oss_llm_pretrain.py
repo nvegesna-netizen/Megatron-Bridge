@@ -435,7 +435,7 @@ def get_gpt_oss_120b_precision_config(compute_dtype: str):
 def set_gpt_oss_120b_common_configs(cfg: ConfigContainer) -> None:
     """Set common performance configurations for all GPT-OSS 120B configs."""
     cfg.model.apply_rope_fusion = False
-    cfg.model.fused_single_qkv_rope = True
+    cfg.model.fused_single_qkv_rope = False
     cfg.model.moe_hybridep_num_sms = 128
     # Restore after _set_cuda_graph_overrides may have clobbered these for "none" CG + VPP≤1 configs.
     cfg.model.use_te_rng_tracker = True
