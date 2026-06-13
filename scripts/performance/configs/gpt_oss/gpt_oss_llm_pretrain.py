@@ -440,6 +440,15 @@ def set_gpt_oss_120b_common_configs(cfg: ConfigContainer) -> None:
     # Restore after _set_cuda_graph_overrides may have clobbered these for "none" CG + VPP≤1 configs.
     cfg.model.use_te_rng_tracker = True
     cfg.rng.te_rng_tracker = True
+    # HybridEP uses a post-dispatch pad_routing_map that does not alias the TE-saved
+    # routing_map tensor, so quantization padding is safe.  The alltoall+deepep path
+    # modifies the TE-saved tensor inplace and must NOT set this flag.
+    if (
+        cfg.model.moe_token_dispatcher_type == "flex"
+        and cfg.model.moe_flex_dispatcher_backend == "hybridep"
+        and (cfg.mixed_precision.fp8 is not None or cfg.mixed_precision.fp4 is not None)
+    ):
+        cfg.model.moe_router_padding_for_quantization = True
 
 
 def gpt_oss_120b_pretrain_config_gb300(
