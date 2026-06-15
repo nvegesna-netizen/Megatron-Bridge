@@ -407,17 +407,12 @@ def gpt_oss_20b_pretrain_config_vr200(
 
 
 def get_gpt_oss_120b_precision_config(compute_dtype: str):
-    """Get precision config for GPT-OSS 120B with stability overrides.
+    """Get precision config for GPT-OSS 120B.
 
-    Mirrors get_gpt_oss_20b_precision_config: disables param-in-quantized-format storage
-    (known unstable at scale) and adds BF16 boundary layers for NVFP4 and FP8_CS.
+    Adds BF16 boundary layers for NVFP4 and FP8_CS.
+    All param storage flags retain their defaults from get_precision_config.
     """
     precision_config = get_precision_config(compute_dtype)
-    precision_config.fp4_param = False
-    precision_config.fp4_param_gather = False
-    precision_config.fp8_param = False
-    precision_config.fp8_param_gather = False
-    precision_config.reuse_grad_buf_for_mxfp8_param_ag = False
     if compute_dtype == "fp8_mx":
         precision_config.first_last_layers_bf16 = False
         precision_config.num_layers_at_start_in_bf16 = 0
