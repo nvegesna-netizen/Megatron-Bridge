@@ -64,6 +64,10 @@ LLAMA3_70B_PRETRAIN_CONFIG_GB300_FP8_CS_V1 = replace(
     micro_batch_size=2,
     use_megatron_fsdp=True,
     cpu_offloading_num_layers=20,
+    # nccl_ub: symmetric kernels for DP all-reduce, same as BF16. _set_nccl_ub_overrides
+    # auto-sets fsdp_manual_registration=True and average_in_collective=False (required for
+    # NCCL symmetric kernels). DP all-reduce is orthogonal to FP8 TP comms — safe to enable.
+    nccl_ub=True,
 )
 
 
@@ -167,6 +171,12 @@ LLAMA3_70B_PRETRAIN_CONFIG_B200_FP8_MX_V1 = replace(
     tensor_model_parallel_size=2,
     pipeline_model_parallel_size=4,
     virtual_pipeline_model_parallel_size=5,
+    # PERF_EXPERIMENT: local full-iteration CUDA graphs are validated for BF16 at this exact
+    # TP/PP/VPP and for FP8_MX on B200 at 8B scale. No CP here (vs CP=2 in BF16) — simpler
+    # capture. Needs empirical throughput + correctness validation at 70B FP8_MX scale before
+    # treating as a locked production setting.
+    cuda_graph_impl="local",
+    cuda_graph_scope="full_iteration",
 )
 
 LLAMA3_70B_PRETRAIN_CONFIG_B200_NVFP4_V1 = replace(
@@ -213,6 +223,8 @@ LLAMA3_70B_PRETRAIN_CONFIG_GB300_FP8_CS_V2 = replace(
     micro_batch_size=2,
     use_megatron_fsdp=True,
     cpu_offloading_num_layers=20,
+    # nccl_ub: see V1 comment above.
+    nccl_ub=True,
 )
 
 
@@ -321,6 +333,9 @@ LLAMA3_70B_PRETRAIN_CONFIG_B200_FP8_MX_V2 = replace(
     tensor_model_parallel_size=2,
     pipeline_model_parallel_size=4,
     virtual_pipeline_model_parallel_size=5,
+    # PERF_EXPERIMENT: see V1 comment above.
+    cuda_graph_impl="local",
+    cuda_graph_scope="full_iteration",
 )
 
 LLAMA3_70B_PRETRAIN_CONFIG_B200_NVFP4_V2 = replace(
