@@ -79,7 +79,7 @@ _NEMOTRON_3_NANO_PRETRAIN_CONFIG_H100 = replace(
     global_batch_size=1024,
     micro_batch_size=1,
     cuda_graph_impl="transformer_engine",
-    moe_flex_dispatcher_backend="hybridep",
+    moe_flex_dispatcher_backend="deepep",
 )
 
 NEMOTRON_3_NANO_PRETRAIN_CONFIG_H100_BF16_V1 = replace(
