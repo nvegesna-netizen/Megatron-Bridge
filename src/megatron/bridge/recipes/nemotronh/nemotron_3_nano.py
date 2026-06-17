@@ -182,7 +182,7 @@ def nemotron_3_nano_pretrain_config() -> ConfigContainer:
     cfg.ddp.use_distributed_optimizer = True
 
     # MoE Force Load Balancing
-    cfg.model.moe_router_force_load_balancing = True
+    cfg.model.moe_router_force_load_balancing = False
 
     cfg.model.init_method_std = 0.0173
     cfg.model.apply_rope_fusion = False
@@ -319,7 +319,7 @@ def nemotron_3_nano_sft_config() -> ConfigContainer:
     cfg.model.moe_router_padding_for_fp8 = False
 
     # MoE Force Load Balancing
-    cfg.model.moe_router_force_load_balancing = True
+    cfg.model.moe_router_force_load_balancing = False
 
     # Training config overrides
     cfg.validation.eval_interval = 500
@@ -506,7 +506,7 @@ def nemotron_3_nano_peft_config(
     cfg.model.moe_router_padding_for_fp8 = False
 
     # MoE Force Load Balancing
-    cfg.model.moe_router_force_load_balancing = True
+    cfg.model.moe_router_force_load_balancing = False
 
     # PEFT config - Nemotron uses Mamba-specific target modules
     mamba_target_modules = ["linear_qkv", "linear_proj", "linear_fc1", "linear_fc2", "in_proj", "out_proj"]
