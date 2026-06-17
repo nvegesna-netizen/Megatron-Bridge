@@ -77,7 +77,6 @@ def nemotron_3_nano_pretrain_config() -> ConfigContainer:
         moe_grouped_gemm=True,
         moe_token_dispatcher_type="alltoall",
         moe_permute_fusion=True,
-        moe_shared_expert_overlap=True,
         # Parallelism
         tensor_model_parallel_size=4,
         pipeline_model_parallel_size=1,
@@ -183,7 +182,7 @@ def nemotron_3_nano_pretrain_config() -> ConfigContainer:
     cfg.ddp.use_distributed_optimizer = True
 
     # MoE Force Load Balancing
-    cfg.model.moe_router_force_load_balancing = False
+    cfg.model.moe_router_force_load_balancing = True
 
     cfg.model.init_method_std = 0.0173
     cfg.model.apply_rope_fusion = False
@@ -247,7 +246,6 @@ def nemotron_3_nano_sft_config() -> ConfigContainer:
         moe_grouped_gemm=True,
         moe_token_dispatcher_type="alltoall",
         moe_permute_fusion=True,
-        moe_shared_expert_overlap=True,
         # Extra config
         apply_rope_fusion=False,
         attention_backend="fused",
@@ -321,7 +319,7 @@ def nemotron_3_nano_sft_config() -> ConfigContainer:
     cfg.model.moe_router_padding_for_fp8 = False
 
     # MoE Force Load Balancing
-    cfg.model.moe_router_force_load_balancing = False
+    cfg.model.moe_router_force_load_balancing = True
 
     # Training config overrides
     cfg.validation.eval_interval = 500
@@ -436,7 +434,6 @@ def nemotron_3_nano_peft_config(
         moe_grouped_gemm=True,
         moe_token_dispatcher_type="alltoall",
         moe_permute_fusion=True,
-        moe_shared_expert_overlap=True,
         # Extra config
         apply_rope_fusion=False,
         attention_backend="fused",
@@ -509,7 +506,7 @@ def nemotron_3_nano_peft_config(
     cfg.model.moe_router_padding_for_fp8 = False
 
     # MoE Force Load Balancing
-    cfg.model.moe_router_force_load_balancing = False
+    cfg.model.moe_router_force_load_balancing = True
 
     # PEFT config - Nemotron uses Mamba-specific target modules
     mamba_target_modules = ["linear_qkv", "linear_proj", "linear_fc1", "linear_fc2", "in_proj", "out_proj"]
