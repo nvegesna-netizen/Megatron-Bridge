@@ -836,6 +836,14 @@ def parse_cli_args():
         "and disables fused cross-entropy loss and TP comm overlap.",
         action="store_true",
     )
+    performance_args.add_argument(
+        "--distributed_timeout_minutes",
+        type=int,
+        help="Timeout in minutes for the distributed process group. "
+        "Overrides the recipe default. Useful when dataset index build on rank 0 "
+        "exceeds the default NCCL watchdog.",
+        required=False,
+    )
 
     # Logging
     logging_args = parser.add_argument_group("Logging arguments")

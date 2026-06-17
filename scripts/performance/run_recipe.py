@@ -186,6 +186,9 @@ def set_user_overrides(config, args):
     if args.deterministic:
         apply_determinism_overrides(config)
 
+    if args.distributed_timeout_minutes:
+        config.dist.distributed_timeout_minutes = args.distributed_timeout_minutes
+
     # Handle convergence mode configuration
     config.logger.log_interval = 1
 
