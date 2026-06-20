@@ -35,8 +35,6 @@ from typing import Callable, List, Optional, Union
 import nemo_run as run
 from nemo_run import Plugin, Script, SlurmExecutor
 
-from argument_parser import NUM_GPUS_PER_NODE_MAP
-
 
 try:
     from utils.utils import WorkloadBaseConfig, get_workload_base_config
@@ -514,11 +512,6 @@ class PerfEnvPlugin(Plugin):
 
         # Force program order kernel launch for TP, CP overlap
         moe_flex_dispatcher_backend = getattr(workload_base_config, "moe_flex_dispatcher_backend", None)
-        # DeepEP inter-node dispatch requires NVSHMEM/IBGDA which is not universally available.
-        # Fall back to hybridep when EP spans multiple nodes (ep > gpus_per_node).
-        gpus_per_node = NUM_GPUS_PER_NODE_MAP.get(self.gpu, 8)
-        if moe_flex_dispatcher_backend == "deepep" and ep_size > gpus_per_node:
-            moe_flex_dispatcher_backend = "hybridep"
         moe_a2a_overlap = (
             self.moe_a2a_overlap
             if self.moe_a2a_overlap is not None
