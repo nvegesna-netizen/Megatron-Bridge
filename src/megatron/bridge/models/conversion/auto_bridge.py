@@ -37,7 +37,7 @@ from safetensors.torch import save_file
 from transformers.configuration_utils import PretrainedConfig
 from typing_extensions import Unpack
 
-from megatron.bridge.models.conversion import model_bridge
+import megatron.bridge.models.conversion.model_bridge as model_bridge
 from megatron.bridge.models.conversion.model_bridge import (
     HFWeightTuple,
     MegatronModelBridge,
