@@ -1,0 +1,159 @@
+# Copyright (c) 2026, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+try:
+    import megatron.bridge  # noqa: F401
+
+    HAVE_MEGATRON_BRIDGE = True
+except ModuleNotFoundError:
+    HAVE_MEGATRON_BRIDGE = False
+
+if HAVE_MEGATRON_BRIDGE:
+    from .glm_llm_pretrain import (
+        glm45_355b_pretrain_config_b200,
+        glm45_355b_pretrain_config_b300,
+        glm45_355b_pretrain_config_gb200,
+        glm45_355b_pretrain_config_gb300,
+        glm45_355b_pretrain_config_h100,
+        glm45_air_106b_pretrain_config_b200,
+        glm45_air_106b_pretrain_config_b300,
+        glm45_air_106b_pretrain_config_gb200,
+        glm45_air_106b_pretrain_config_gb300,
+        glm45_air_106b_pretrain_config_h100,
+        glm52_753b_pretrain_config_b200,
+        glm52_753b_pretrain_config_b300,
+        glm52_753b_pretrain_config_gb200,
+        glm52_753b_pretrain_config_gb300,
+        glm52_753b_pretrain_config_h100,
+    )
+
+from .glm_workload_base_configs import (
+    GLM45_355B_PRETRAIN_CONFIG_B200_BF16,
+    GLM45_355B_PRETRAIN_CONFIG_B200_FP8_CS,
+    GLM45_355B_PRETRAIN_CONFIG_B200_FP8_MX,
+    GLM45_355B_PRETRAIN_CONFIG_B300_BF16,
+    GLM45_355B_PRETRAIN_CONFIG_B300_FP8_CS,
+    GLM45_355B_PRETRAIN_CONFIG_B300_FP8_MX,
+    GLM45_355B_PRETRAIN_CONFIG_GB200_BF16,
+    GLM45_355B_PRETRAIN_CONFIG_GB200_FP8_CS,
+    GLM45_355B_PRETRAIN_CONFIG_GB200_FP8_MX,
+    GLM45_355B_PRETRAIN_CONFIG_GB300_BF16,
+    GLM45_355B_PRETRAIN_CONFIG_GB300_FP8_CS,
+    GLM45_355B_PRETRAIN_CONFIG_GB300_FP8_MX,
+    GLM45_355B_PRETRAIN_CONFIG_H100_BF16,
+    GLM45_355B_PRETRAIN_CONFIG_H100_FP8_CS,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_B200_BF16,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_B200_FP8_CS,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_B200_FP8_MX,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_B300_BF16,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_B300_FP8_CS,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_B300_FP8_MX,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_GB200_BF16,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_GB200_FP8_CS,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_GB200_FP8_MX,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_GB300_BF16,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_GB300_FP8_CS,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_GB300_FP8_MX,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_H100_BF16,
+    GLM45_AIR_106B_PRETRAIN_CONFIG_H100_FP8_CS,
+    GLM52_753B_PRETRAIN_CONFIG_B200_BF16,
+    GLM52_753B_PRETRAIN_CONFIG_B200_FP8_CS,
+    GLM52_753B_PRETRAIN_CONFIG_B200_FP8_MX,
+    GLM52_753B_PRETRAIN_CONFIG_B300_BF16,
+    GLM52_753B_PRETRAIN_CONFIG_B300_FP8_CS,
+    GLM52_753B_PRETRAIN_CONFIG_B300_FP8_MX,
+    GLM52_753B_PRETRAIN_CONFIG_GB200_BF16,
+    GLM52_753B_PRETRAIN_CONFIG_GB200_FP8_CS,
+    GLM52_753B_PRETRAIN_CONFIG_GB200_FP8_MX,
+    GLM52_753B_PRETRAIN_CONFIG_GB300_BF16,
+    GLM52_753B_PRETRAIN_CONFIG_GB300_FP8_CS,
+    GLM52_753B_PRETRAIN_CONFIG_GB300_FP8_MX,
+    GLM52_753B_PRETRAIN_CONFIG_H100_BF16,
+    GLM52_753B_PRETRAIN_CONFIG_H100_FP8_CS,
+    GLM52_753B_PRETRAIN_CONFIG_H100_FP8_SC,
+)
+
+
+__all__ = [
+    # GLM-4.5 355B-A32B WBC constants
+    "GLM45_355B_PRETRAIN_CONFIG_GB300_BF16",
+    "GLM45_355B_PRETRAIN_CONFIG_GB300_FP8_CS",
+    "GLM45_355B_PRETRAIN_CONFIG_GB300_FP8_MX",
+    "GLM45_355B_PRETRAIN_CONFIG_GB200_BF16",
+    "GLM45_355B_PRETRAIN_CONFIG_GB200_FP8_CS",
+    "GLM45_355B_PRETRAIN_CONFIG_GB200_FP8_MX",
+    "GLM45_355B_PRETRAIN_CONFIG_B300_BF16",
+    "GLM45_355B_PRETRAIN_CONFIG_B300_FP8_CS",
+    "GLM45_355B_PRETRAIN_CONFIG_B300_FP8_MX",
+    "GLM45_355B_PRETRAIN_CONFIG_B200_BF16",
+    "GLM45_355B_PRETRAIN_CONFIG_B200_FP8_CS",
+    "GLM45_355B_PRETRAIN_CONFIG_B200_FP8_MX",
+    "GLM45_355B_PRETRAIN_CONFIG_H100_BF16",
+    "GLM45_355B_PRETRAIN_CONFIG_H100_FP8_CS",
+    # GLM-4.5-Air 106B-A12B WBC constants
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_GB300_BF16",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_GB300_FP8_CS",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_GB300_FP8_MX",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_GB200_BF16",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_GB200_FP8_CS",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_GB200_FP8_MX",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_B300_BF16",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_B300_FP8_CS",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_B300_FP8_MX",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_B200_BF16",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_B200_FP8_CS",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_B200_FP8_MX",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_H100_BF16",
+    "GLM45_AIR_106B_PRETRAIN_CONFIG_H100_FP8_CS",
+    # GLM-5.2 753B WBC constants
+    "GLM52_753B_PRETRAIN_CONFIG_B200_BF16",
+    "GLM52_753B_PRETRAIN_CONFIG_B200_FP8_CS",
+    "GLM52_753B_PRETRAIN_CONFIG_B200_FP8_MX",
+    "GLM52_753B_PRETRAIN_CONFIG_B300_BF16",
+    "GLM52_753B_PRETRAIN_CONFIG_B300_FP8_CS",
+    "GLM52_753B_PRETRAIN_CONFIG_B300_FP8_MX",
+    "GLM52_753B_PRETRAIN_CONFIG_GB200_BF16",
+    "GLM52_753B_PRETRAIN_CONFIG_GB200_FP8_CS",
+    "GLM52_753B_PRETRAIN_CONFIG_GB200_FP8_MX",
+    "GLM52_753B_PRETRAIN_CONFIG_GB300_BF16",
+    "GLM52_753B_PRETRAIN_CONFIG_GB300_FP8_CS",
+    "GLM52_753B_PRETRAIN_CONFIG_GB300_FP8_MX",
+    "GLM52_753B_PRETRAIN_CONFIG_H100_BF16",
+    "GLM52_753B_PRETRAIN_CONFIG_H100_FP8_CS",
+    "GLM52_753B_PRETRAIN_CONFIG_H100_FP8_SC",
+]
+
+if HAVE_MEGATRON_BRIDGE:
+    __all__.extend(
+        [
+            # GLM-5.2 753B pretrain functions
+            "glm52_753b_pretrain_config_gb300",
+            "glm52_753b_pretrain_config_gb200",
+            "glm52_753b_pretrain_config_b300",
+            "glm52_753b_pretrain_config_b200",
+            "glm52_753b_pretrain_config_h100",
+            # GLM-4.5 355B-A32B pretrain functions
+            "glm45_355b_pretrain_config_gb300",
+            "glm45_355b_pretrain_config_gb200",
+            "glm45_355b_pretrain_config_b300",
+            "glm45_355b_pretrain_config_b200",
+            "glm45_355b_pretrain_config_h100",
+            # GLM-4.5-Air 106B-A12B pretrain functions
+            "glm45_air_106b_pretrain_config_gb300",
+            "glm45_air_106b_pretrain_config_gb200",
+            "glm45_air_106b_pretrain_config_b300",
+            "glm45_air_106b_pretrain_config_b200",
+            "glm45_air_106b_pretrain_config_h100",
+        ]
+    )

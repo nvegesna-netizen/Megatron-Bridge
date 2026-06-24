@@ -20,6 +20,10 @@ from .glm45 import (
     glm45_air_106b_pretrain_config,
     glm45_air_106b_sft_config,
 )
+from .glm5 import (
+    glm5_2_753b_pretrain_config,
+    glm52_753b_pretrain_config,
+)
 
 
 __all__ = [
@@ -29,4 +33,6 @@ __all__ = [
     "glm45_air_106b_sft_config",
     "glm45_355b_peft_config",
     "glm45_air_106b_peft_config",
+    "glm52_753b_pretrain_config",
+    "glm5_2_753b_pretrain_config",
 ]

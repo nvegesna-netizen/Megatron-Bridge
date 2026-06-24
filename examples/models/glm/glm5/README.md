@@ -1,20 +1,20 @@
-# GLM-5 / GLM-5.1 Examples
+# GLM-5 / GLM-5.1 / GLM-5.2 Examples
 
-Scripts for the GLM-5 family — [GLM-5](https://huggingface.co/zai-org/GLM-5) (`zai-org/GLM-5`) and [GLM-5.1](https://huggingface.co/zai-org/GLM-5.1) (`zai-org/GLM-5.1`) — large sparse MoE models with Multi-Latent Attention (MLA) and Dynamic Sparse Attention (DSA).
+Scripts for the GLM-5 family — [GLM-5](https://huggingface.co/zai-org/GLM-5) (`zai-org/GLM-5`), [GLM-5.1](https://huggingface.co/zai-org/GLM-5.1) (`zai-org/GLM-5.1`), and [GLM-5.2](https://huggingface.co/zai-org/GLM-5.2) (`zai-org/GLM-5.2`) — large sparse MoE models with Multi-Latent Attention (MLA) and Dynamic Sparse Attention (DSA).
 
-GLM-5 and GLM-5.1 share the `GlmMoeDsaForCausalLM` architecture and identical MoE / MLA / DSA dimensions, so the same `GLM5Bridge` handles both. To run the GLM-5.1 checkpoint, replace `zai-org/GLM-5` with `zai-org/GLM-5.1` (or set `MODEL_NAME=GLM-5.1` in the slurm scripts).
+GLM-5, GLM-5.1, and GLM-5.2 share the `GlmMoeDsaForCausalLM` architecture and compatible MoE / MLA / DSA dimensions, so the same `GLM5Bridge` handles them. To run the GLM-5.2 checkpoint, replace `zai-org/GLM-5` with `zai-org/GLM-5.2` (or set `MODEL_NAME=GLM-5.2` in the slurm scripts).
 
 | Property | Value |
 |---|---|
-| HF model IDs | `zai-org/GLM-5`, `zai-org/GLM-5.1` |
+| HF model IDs | `zai-org/GLM-5`, `zai-org/GLM-5.1`, `zai-org/GLM-5.2` |
 | Architecture | MoE + MLA + DSA (`GlmMoeDsaForCausalLM`) |
 | Layers | 78 transformer (first 3 dense, rest MoE) |
 | Routed experts | 256, top-8 per token |
 | Shared experts | 1 per MoE layer |
-| Total params | ~800B+ (BF16) |
-| Active params | ~60B per token |
+| Total params | GLM-5.2 model card: 753B |
+| Active params | Not specified in the GLM-5.2 model card |
 
-**Requirements:** `transformers >= 5.2.0`, `fast-hadamard-transform` (CUDA extension, required by DSA)
+**Requirements:** a `transformers` build with `GlmMoeDsaForCausalLM` support, `fast-hadamard-transform` (CUDA extension, required by DSA)
 
 ## Hardware Requirements
 
@@ -77,14 +77,13 @@ Both scripts resolve the HF model from the local cache to avoid `snapshot_downlo
 |---|---|
 | `CONTAINER_IMAGE` | Path to Singularity/SquashFS container image |
 | `BRIDGE_PATH` | Megatron-Bridge checkout on shared storage (bind-mounted as `/opt/Megatron-Bridge`) |
-| `HF_HOME` | HuggingFace cache directory (must contain the downloaded `zai-org/GLM-5` or `zai-org/GLM-5.1` model) |
+| `HF_HOME` | HuggingFace cache directory (must contain the downloaded `zai-org/GLM-5`, `zai-org/GLM-5.1`, or `zai-org/GLM-5.2` model) |
 | `HF_TOKEN` | HuggingFace access token (for gated model access) |
-| `MODEL_NAME` | HF model name without the `zai-org/` prefix; defaults to `GLM-5`. Set to `GLM-5.1` to run the 5.1 checkpoint. |
+| `MODEL_NAME` | HF model name without the `zai-org/` prefix; defaults to `GLM-5`. Set to `GLM-5.1` or `GLM-5.2` to run newer checkpoints. |
 | `OUTPUT_DIR` | Conversion output directory (conversion script only) |
 
-## MCore Patches Required
+## MCore DSA Support
 
-The DSA attention variant requires two patches to `megatron/core/models/gpt/experimental_attention_variant_module_specs.py`:
+Current Megatron-Core has the DSA dispatch and MLA metainfo support in `megatron/core/models/gpt/experimental_attention_variant_module_specs.py`.
 
-1. **DSA dispatch:** Add `elif config.experimental_attention_variant == "dsa"` to `get_experimental_attention_variant_module_spec` to call `get_dsa_module_spec_for_backend`.
-2. **MLA metainfo:** Add `metainfo={"fuse_input_layernorm": False}` to the `MLASelfAttention` `ModuleSpec` in `get_dsa_module_spec_for_backend`.
+DSAttention currently asserts `context_parallel_size == 1` and rejects RoPE fusion, so training recipes and workload configs must keep CP disabled and `apply_rope_fusion=False`.
