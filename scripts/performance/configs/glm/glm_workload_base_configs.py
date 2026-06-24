@@ -57,7 +57,9 @@ GLM52_753B_PRETRAIN_CONFIG_GB300 = replace(
     virtual_pipeline_model_parallel_size=None,
     # 78 layers / 8 stages: 6 stages × 10 layers + 2 stages × 9 layers = 78
     pp_layout="Et*10|(t*10|)*5t*9|t*9L",
-    expert_model_parallel_size=64,
+    # EP=16: max valid for TP=2, PP=8, 256 GPUs — TP×PP×EP = 2×8×16 = 256 = num_gpus.
+    # DP = 256/16 = 16; EP=16 ≤ DP=16. 256 routed experts / EP=16 = 16 experts per rank.
+    expert_model_parallel_size=16,
     moe_flex_dispatcher_backend="hybridep",
     moe_a2a_overlap=False,
     cuda_graph_impl="transformer_engine",
@@ -83,7 +85,9 @@ GLM52_753B_PRETRAIN_CONFIG_GB200 = replace(
     virtual_pipeline_model_parallel_size=None,
     # 78 layers / 8 stages: 6 stages × 10 layers + 2 stages × 9 layers = 78
     pp_layout="Et*10|(t*10|)*5t*9|t*9L",
-    expert_model_parallel_size=64,
+    # EP=16: max valid for TP=2, PP=8, 256 GPUs — TP×PP×EP = 2×8×16 = 256 = num_gpus.
+    # DP = 256/16 = 16; EP=16 ≤ DP=16. 256 routed experts / EP=16 = 16 experts per rank.
+    expert_model_parallel_size=16,
     moe_flex_dispatcher_backend="hybridep",
     moe_a2a_overlap=False,
     cuda_graph_impl="transformer_engine",
@@ -105,7 +109,8 @@ GLM52_753B_PRETRAIN_CONFIG_B300 = replace(
     virtual_pipeline_model_parallel_size=None,
     # 78 layers / 16 stages: 14 stages × 5 layers + 2 stages × 4 layers = 78
     pp_layout="Et*4|(t*5|)*14t*4L",
-    expert_model_parallel_size=16,
+    # EP=8: TP=2, PP=16, 256 GPUs — DP = 256/(2×16) = 8; EP=8 ≤ DP=8. DP%EP = 0 ✓
+    expert_model_parallel_size=8,
     moe_a2a_overlap=False,
     recompute_modules=["mla_up_proj"],
 )
@@ -124,7 +129,8 @@ GLM52_753B_PRETRAIN_CONFIG_B200 = replace(
     virtual_pipeline_model_parallel_size=None,
     # 78 layers / 16 stages: 14 stages × 5 layers + 2 stages × 4 layers = 78
     pp_layout="Et*4|(t*5|)*14t*4L",
-    expert_model_parallel_size=16,
+    # EP=8: TP=2, PP=16, 256 GPUs — DP = 256/(2×16) = 8; EP=8 ≤ DP=8. DP%EP = 0 ✓
+    expert_model_parallel_size=8,
     moe_a2a_overlap=False,
     recompute_modules=["mla_up_proj"],
 )
@@ -143,7 +149,9 @@ GLM52_753B_PRETRAIN_CONFIG_H100 = replace(
     virtual_pipeline_model_parallel_size=None,
     # 78 layers / 16 stages: 14 stages × 5 layers + 2 stages × 4 layers = 78
     pp_layout="Et*4|(t*5|)*14t*4L",
-    expert_model_parallel_size=64,
+    # EP=8: DP = 1024/(8*16) = 8; EP=8 ≤ DP=8, DP%EP=0 ✓.
+    # 256 routed experts / EP=8 = 32 experts per EP rank.
+    expert_model_parallel_size=8,
     moe_a2a_overlap=False,
     recompute_modules=["mla_up_proj", "mlp"],
 )

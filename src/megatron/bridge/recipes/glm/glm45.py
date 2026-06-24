@@ -26,7 +26,7 @@ from megatron.bridge.training.config import ConfigContainer
 def glm45_355b_pretrain_config() -> ConfigContainer:
     """Return a pre-training config for GLM 4.5 355B-A32B variant.
 
-    Recommended parallelism: TP=2, PP=8, EP=16
+    Recommended parallelism: TP=2, PP=4, EP=16
     """
     cfg = _pretrain_common()
 
@@ -45,7 +45,7 @@ def glm45_355b_pretrain_config() -> ConfigContainer:
 
     # Parallelism settings
     cfg.model.tensor_model_parallel_size = 2
-    cfg.model.pipeline_model_parallel_size = 8
+    cfg.model.pipeline_model_parallel_size = 4
     cfg.model.pipeline_model_parallel_layout = None
     cfg.model.pipeline_dtype = None
     cfg.model.virtual_pipeline_model_parallel_size = None
@@ -153,7 +153,7 @@ def glm45_355b_pretrain_config() -> ConfigContainer:
 def glm45_air_106b_pretrain_config() -> ConfigContainer:
     """Return a pre-training config for GLM 4.5 Air 106B-A12B variant.
 
-    Recommended parallelism: TP=1, PP=4, EP=8
+    Recommended parallelism: TP=1, PP=2, EP=8
     """
     cfg = _pretrain_common()
 
@@ -172,7 +172,7 @@ def glm45_air_106b_pretrain_config() -> ConfigContainer:
 
     # Parallelism settings
     cfg.model.tensor_model_parallel_size = 1
-    cfg.model.pipeline_model_parallel_size = 4
+    cfg.model.pipeline_model_parallel_size = 2
     cfg.model.pipeline_model_parallel_layout = None
     cfg.model.pipeline_dtype = None
     cfg.model.virtual_pipeline_model_parallel_size = None
