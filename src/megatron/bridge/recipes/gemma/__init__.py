@@ -34,6 +34,7 @@ from .gemma3 import (
 
 # Gemma4 models
 from .gemma4 import (
+    gemma4_e4b_fp8_pretrain_config,
     gemma4_e4b_pretrain_config,
 )
 
@@ -55,4 +56,5 @@ __all__ = [
     "gemma3_1b_peft_config",
     # Gemma4 models
     "gemma4_e4b_pretrain_config",
+    "gemma4_e4b_fp8_pretrain_config",
 ]

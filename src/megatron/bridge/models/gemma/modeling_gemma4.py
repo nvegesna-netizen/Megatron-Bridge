@@ -76,6 +76,11 @@ if TYPE_CHECKING:
 HAVE_TE = safe_import_from("megatron.core.extensions.transformer_engine", "TENorm")[1]
 TENorm, _ = safe_import_from("megatron.core.extensions.transformer_engine", "TENorm")
 TEDotProductAttention, _ = safe_import_from("megatron.core.extensions.transformer_engine", "TEDotProductAttention")
+TEColumnParallelLinear, _ = safe_import_from("megatron.core.extensions.transformer_engine", "TEColumnParallelLinear")
+TERowParallelLinear, _ = safe_import_from("megatron.core.extensions.transformer_engine", "TERowParallelLinear")
+TESpecProvider, _ = safe_import_from(
+    "megatron.core.extensions.transformer_engine_spec_provider", "TESpecProvider"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -720,6 +725,72 @@ def get_gemma4_layer_spec(config: Optional[TransformerConfig] = None) -> ModuleS
 
 
 gemma4_layer_spec = get_gemma4_layer_spec()
+
+
+def get_gemma4_te_layer_spec(config: Optional[TransformerConfig] = None) -> ModuleSpec:
+    """Return a TE-based ModuleSpec for Gemma-4 Dense, enabling FP8 and NVFP4 training.
+
+    Identical structure to :func:`get_gemma4_layer_spec` but substitutes
+    ``TEColumnParallelLinear`` / ``TERowParallelLinear`` (from ``TESpecProvider``) for
+    the MCore-native linear layers, and replaces ``DotProductAttention`` with
+    ``Gemma4TEDotProductAttentionDense``.
+
+    All four post-sublayer norms (``post_self_attn_layernorm``, ``post_mlp_layernorm``,
+    etc.) remain as ``RMSNorm`` — they are applied by ``Gemma4DenseTransformerLayer``
+    *after* the linear output, so fusing them inside the linear (via
+    ``TERowParallelLinearLayerNorm``) would double-apply the norm and is incorrect
+    for the Dense 4-norm residual structure.
+
+    Requires Transformer Engine. Use :func:`get_gemma4_layer_spec` for the local
+    (non-TE, BF16-only) path.
+
+    Args:
+        config: Optional TransformerConfig. Passed through but not read here.
+
+    Returns:
+        ModuleSpec wrapping ``Gemma4DenseTransformerLayer`` with TE linear submodules.
+
+    Raises:
+        RuntimeError: If Transformer Engine is not installed.
+    """
+    if not HAVE_TE:
+        raise RuntimeError(
+            "Transformer Engine is required for get_gemma4_te_layer_spec. "
+            "Install transformer-engine or use get_gemma4_layer_spec for the "
+            "local (non-TE, BF16-only) spec."
+        )
+
+    backend = TESpecProvider()
+
+    submodules = Gemma4DenseTransformerLayerSubmodules(
+        input_layernorm=RMSNorm,
+        self_attention=ModuleSpec(
+            module=Gemma4DenseSelfAttention,
+            params={"attn_mask_type": AttnMaskType.causal},
+            submodules=SelfAttentionSubmodules(
+                linear_qkv=backend.column_parallel_linear(),
+                core_attention=Gemma4TEDotProductAttentionDense,
+                linear_proj=backend.row_parallel_linear(),
+                q_layernorm=RMSNorm,
+                k_layernorm=RMSNorm,
+            ),
+        ),
+        self_attn_bda=get_bias_dropout_add,
+        post_self_attn_layernorm=RMSNorm,
+        pre_mlp_layernorm=RMSNorm,
+        mlp=ModuleSpec(
+            module=MLP,
+            submodules=MLPSubmodules(
+                linear_fc1=backend.column_parallel_linear(),
+                linear_fc2=backend.row_parallel_linear(),
+            ),
+        ),
+        mlp_bda=get_bias_dropout_add,
+        post_mlp_layernorm=RMSNorm,
+        post_per_layer_input_norm=RMSNorm,
+    )
+
+    return ModuleSpec(module=Gemma4DenseTransformerLayer, submodules=submodules)
 
 
 # ---------------------------------------------------------------------------
@@ -1459,6 +1530,51 @@ class Gemma4TEDotProductAttention(TEDotProductAttention):
             config.window_size = (config.window_size - 1, 0)
         else:
             config.window_size = None
+
+        super().__init__(
+            config=config,
+            layer_number=layer_number,
+            attn_mask_type=attn_mask_type,
+            attention_type=attention_type,
+            attention_dropout=attention_dropout,
+            **kwargs,
+        )
+
+
+class Gemma4TEDotProductAttentionDense(TEDotProductAttention):
+    """TE core attention for Gemma 4 Dense (E4B): switches SWA/global via window_size.
+
+    Analogous to :class:`Gemma4TEDotProductAttention` (the MoE variant) but uses
+    ``_is_gemma4_sliding_layer`` — the Dense model's sliding-layer predicate that
+    reads ``config.window_attn_skip_freq`` — instead of the MoE-specific
+    ``_is_local_attn_layer``.
+
+    For sliding layers, ``config.window_size`` is already the left-exclusive tuple
+    ``(511, 0)`` from ``Gemma4DenseProvider``; it is preserved as-is.  For global
+    (full-attention) layers, ``window_size`` is set to ``None`` so TE uses unrestricted
+    causal attention.
+
+    The attention mask and rotary-embedding selection are handled upstream by
+    ``Gemma4DenseTransformerLayer._forward_attention`` and
+    ``Gemma4DenseSelfAttention.forward``, so this class only needs to configure the
+    TE window constraint.
+    """
+
+    def __init__(
+        self,
+        config: TransformerConfig,
+        layer_number: int,
+        attn_mask_type: AttnMaskType,
+        attention_type: str,
+        attention_dropout: Optional[float] = None,
+        **kwargs,
+    ):
+        config = copy.deepcopy(config)
+        if not _is_gemma4_sliding_layer(config, layer_number):
+            # Global layers use full (unrestricted) causal attention
+            config.window_size = None
+        # Sliding layers: config.window_size is already (511, 0) from Gemma4DenseProvider;
+        # TE interprets this as attending to the 511 most recent tokens on the left.
 
         super().__init__(
             config=config,

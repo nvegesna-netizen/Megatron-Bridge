@@ -40,6 +40,7 @@ from megatron.bridge.models.gemma.modeling_gemma4 import (
     _install_ple_forward,
     _install_tied_kv,
     get_gemma4_layer_spec,
+    get_gemma4_te_layer_spec,
     wire_gemma4_kv_sharing,
 )
 from megatron.bridge.models.gemma.modules import extend_instance
@@ -196,10 +197,13 @@ class Gemma4DenseProvider(GPTModelProvider):
         }
         for attr in dual_rope_attrs:
             setattr(config, attr, None)
+        use_te_spec = HAVE_TE and getattr(config, "transformer_impl", "local") == "transformer_engine"
+        transformer_layer_spec = get_gemma4_te_layer_spec(config) if use_te_spec else get_gemma4_layer_spec(config)
+
         try:
             model = GPTModel(
                 config=config,
-                transformer_layer_spec=get_gemma4_layer_spec(config),
+                transformer_layer_spec=transformer_layer_spec,
                 vocab_size=padded_vocab,
                 max_sequence_length=self.seq_length,
                 position_embedding_type=self.position_embedding_type,

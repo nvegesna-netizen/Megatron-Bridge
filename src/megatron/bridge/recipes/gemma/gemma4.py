@@ -136,3 +136,55 @@ def gemma4_e4b_pretrain_config() -> ConfigContainer:
     cfg.ddp.data_parallel_sharding_strategy = "no_shard"
 
     return cfg
+
+
+def gemma4_e4b_fp8_pretrain_config() -> ConfigContainer:
+    """Return a pre-training config for Gemma 4 E4B with FP8/NVFP4 via the TE spec.
+
+    Builds on :func:`gemma4_e4b_pretrain_config` and switches
+    ``transformer_impl`` from ``"local"`` to ``"transformer_engine"``.  This
+    activates :func:`get_gemma4_te_layer_spec` in ``Gemma4DenseProvider.build()``,
+    which replaces every ``ColumnParallelLinear`` / ``RowParallelLinear`` with
+    ``TEColumnParallelLinear`` / ``TERowParallelLinear`` and swaps
+    ``DotProductAttention`` for ``Gemma4TEDotProductAttentionDense``.  The TE linear
+    layers participate in the FP8 autocast context and are quantized; attention
+    GEMMs remain in BF16 (TE's default).
+
+    Precision is controlled at launch time via the WBC config or ``--precision``
+    argument.  Supported values::
+
+        bf16          — standard BF16 (TE spec, no FP8 quantisation)
+        fp8_cs        — FP8 current-scaling (Hopper and Blackwell)
+        fp8_mx        — MXFP8 (Blackwell only, SM100+)
+        nvfp4         — NVFP4 (Blackwell only, SM100+)
+
+    Compared to :func:`gemma4_e4b_pretrain_config`:
+
+    * ``transformer_impl = "transformer_engine"``
+    * ``gradient_accumulation_fusion = True``   — TE supports weight-grad fusion
+    * ``cross_entropy_fusion_impl = "te"``       — use TE's fused cross-entropy
+    * ``masked_softmax_fusion = False``          — TE handles attention internally
+
+    Returns:
+        ConfigContainer with all fields set for Gemma 4 E4B FP8 pre-training.
+    """
+    cfg = gemma4_e4b_pretrain_config()
+
+    # Switch from the local (non-TE) spec to the TE spec so that
+    # TEColumnParallelLinear / TERowParallelLinear replace ColumnParallelLinear /
+    # RowParallelLinear in every transformer block.  FP8 quantisation hooks only
+    # fire on TE-wrapped linears; the local spec silently falls back to BF16.
+    cfg.model.transformer_impl = "transformer_engine"
+
+    # TE supports fused weight-gradient accumulation; not available in local spec.
+    cfg.model.gradient_accumulation_fusion = True
+
+    # Keep cross_entropy_fusion_impl="native" from the base recipe.  The TE
+    # cross-entropy kernel (impl="te") has known stability issues flagged by
+    # MCore (UserWarning in model_parallel_config.py) and is not needed here.
+
+    # TE handles the attention kernel internally; the native masked-softmax
+    # fusion is not needed and can conflict with TE's own attention dispatch.
+    cfg.model.masked_softmax_fusion = False
+
+    return cfg
