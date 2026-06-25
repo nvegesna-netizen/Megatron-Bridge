@@ -46,7 +46,7 @@ def step35_196b_a11b_pretrain_config() -> ConfigContainer:
     cfg.model.context_parallel_size = 8
     cfg.model.expert_model_parallel_size = 8
     cfg.model.expert_tensor_parallel_size = 1
-    cfg.model.sequence_parallel = True
+    cfg.model.sequence_parallel = False
     cfg.model.seq_length = 4096
     cfg.model.init_method_std = 0.02
 
