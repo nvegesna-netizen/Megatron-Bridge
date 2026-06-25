@@ -197,10 +197,9 @@ class Gemma4DenseProvider(GPTModelProvider):
         }
         for attr in dual_rope_attrs:
             setattr(config, attr, None)
-        use_te_spec = HAVE_TE and getattr(config, "transformer_impl", "local") == "transformer_engine"
-        transformer_layer_spec = get_gemma4_te_layer_spec(config) if use_te_spec else get_gemma4_layer_spec(config)
-
         try:
+            use_te_spec = HAVE_TE and getattr(config, "transformer_impl", "local") == "transformer_engine"
+            transformer_layer_spec = get_gemma4_te_layer_spec(config) if use_te_spec else get_gemma4_layer_spec(config)
             model = GPTModel(
                 config=config,
                 transformer_layer_spec=transformer_layer_spec,

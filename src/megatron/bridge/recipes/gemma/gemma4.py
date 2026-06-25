@@ -162,8 +162,9 @@ def gemma4_e4b_fp8_pretrain_config() -> ConfigContainer:
 
     * ``transformer_impl = "transformer_engine"``
     * ``gradient_accumulation_fusion = True``   — TE supports weight-grad fusion
-    * ``cross_entropy_fusion_impl = "te"``       — use TE's fused cross-entropy
     * ``masked_softmax_fusion = False``          — TE handles attention internally
+    * ``cross_entropy_fusion_impl`` stays ``"native"`` — the TE CE kernel has
+      known stability issues (MCore ``model_parallel_config.py`` UserWarning)
 
     Returns:
         ConfigContainer with all fields set for Gemma 4 E4B FP8 pre-training.

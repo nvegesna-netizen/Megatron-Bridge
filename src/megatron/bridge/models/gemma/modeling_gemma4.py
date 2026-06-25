@@ -76,8 +76,6 @@ if TYPE_CHECKING:
 HAVE_TE = safe_import_from("megatron.core.extensions.transformer_engine", "TENorm")[1]
 TENorm, _ = safe_import_from("megatron.core.extensions.transformer_engine", "TENorm")
 TEDotProductAttention, _ = safe_import_from("megatron.core.extensions.transformer_engine", "TEDotProductAttention")
-TEColumnParallelLinear, _ = safe_import_from("megatron.core.extensions.transformer_engine", "TEColumnParallelLinear")
-TERowParallelLinear, _ = safe_import_from("megatron.core.extensions.transformer_engine", "TERowParallelLinear")
 TESpecProvider, _ = safe_import_from(
     "megatron.core.extensions.transformer_engine_spec_provider", "TESpecProvider"
 )
