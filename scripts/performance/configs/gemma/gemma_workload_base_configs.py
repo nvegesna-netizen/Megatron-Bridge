@@ -50,8 +50,8 @@ BASE_GEMMA4_E4B_CONFIG = WorkloadBaseConfig(
 
 
 # =============================================================================
-# H100 — HYPOTHESIS: TP=4, PP=2, EP=1, GBS=512, MBS=1
-# HBM capacity on H100 (80 GB) requires pipeline parallelism for SEQ=8192.
+# H100 — HYPOTHESIS: TP=4, PP=1, EP=1, GBS=512, MBS=1
+# Gemma4DenseProvider enforces PP=1 only (raises NotImplementedError for PP>1).
 # HYPOTHESIS: not benchmarked; derived from model size and analogy to similar
 # dense ~4B models on H100.
 # NOTE: SWA hybrid attention requires long SEQ; CP support unverified.
@@ -59,11 +59,11 @@ BASE_GEMMA4_E4B_CONFIG = WorkloadBaseConfig(
 
 GEMMA4_E4B_PRETRAIN_CONFIG_H100_V1 = replace(
     BASE_GEMMA4_E4B_CONFIG,
-    # HYPOTHESIS: 8 GPUs (TP=4 * PP=2)
-    num_gpus=8,
-    # HYPOTHESIS: TP=4, PP=2 to fit SEQ=8192 on 80 GB HBM
+    # HYPOTHESIS: 4 GPUs (TP=4 * PP=1)
+    num_gpus=4,
+    # HYPOTHESIS: TP=4, PP=1 — Gemma4DenseProvider enforces PP=1 only
     tensor_model_parallel_size=4,
-    pipeline_model_parallel_size=2,
+    pipeline_model_parallel_size=1,
     virtual_pipeline_model_parallel_size=None,
     # Dense model: no expert parallelism
     expert_model_parallel_size=1,
@@ -126,18 +126,19 @@ GEMMA4_E4B_PRETRAIN_CONFIG_GB300_BF16_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_GB300_V1
 
 
 # =============================================================================
-# B200 — HYPOTHESIS: TP=4, PP=2, EP=1, GBS=512, MBS=1
-# Non-NVLink-72 Blackwell; mirrors H100 topology conservatively.
+# B200 — HYPOTHESIS: TP=4, PP=1, EP=1, GBS=512, MBS=1
+# Gemma4DenseProvider enforces PP=1 only. Non-NVLink-72 Blackwell.
 # HYPOTHESIS: unverified — derived by analogy from H100 with Blackwell memory
 # bandwidth; retune MBS once benchmarked.
 # =============================================================================
 
 GEMMA4_E4B_PRETRAIN_CONFIG_B200_V1 = replace(
     BASE_GEMMA4_E4B_CONFIG,
-    # HYPOTHESIS: 8 GPUs (TP=4 * PP=2)
-    num_gpus=8,
+    # HYPOTHESIS: 4 GPUs (TP=4 * PP=1)
+    num_gpus=4,
+    # HYPOTHESIS: TP=4, PP=1 — Gemma4DenseProvider enforces PP=1 only
     tensor_model_parallel_size=4,
-    pipeline_model_parallel_size=2,
+    pipeline_model_parallel_size=1,
     virtual_pipeline_model_parallel_size=None,
     expert_model_parallel_size=1,
     context_parallel_size=1,
@@ -171,11 +172,63 @@ GEMMA4_E4B_PRETRAIN_CONFIG_B300_V1 = replace(
 GEMMA4_E4B_PRETRAIN_CONFIG_B300_BF16_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_B300_V1
 
 
+# =============================================================================
+# FP8-CS (current-scaling) — Hopper and Blackwell
+# Same parallelism topology as BF16; FP8 reduces memory pressure so MBS could
+# increase, but conservative HYPOTHESIS configs reuse BF16 topology.
+# Requires gemma4_e4b_fp8_pretrain_config() (transformer_impl="transformer_engine").
+# =============================================================================
+
+GEMMA4_E4B_PRETRAIN_CONFIG_H100_FP8_CS_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_H100_V1
+GEMMA4_E4B_PRETRAIN_CONFIG_GB200_FP8_CS_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_GB200_V1
+GEMMA4_E4B_PRETRAIN_CONFIG_GB300_FP8_CS_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_GB300_V1
+GEMMA4_E4B_PRETRAIN_CONFIG_B200_FP8_CS_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_B200_V1
+GEMMA4_E4B_PRETRAIN_CONFIG_B300_FP8_CS_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_B300_V1
+
+
+# =============================================================================
+# FP8-MX (MXFP8 block-scaling) — Blackwell only (SM100+)
+# H100 does not support MXFP8; no H100 config here.
+# =============================================================================
+
+GEMMA4_E4B_PRETRAIN_CONFIG_GB200_FP8_MX_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_GB200_V1
+GEMMA4_E4B_PRETRAIN_CONFIG_GB300_FP8_MX_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_GB300_V1
+GEMMA4_E4B_PRETRAIN_CONFIG_B200_FP8_MX_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_B200_V1
+GEMMA4_E4B_PRETRAIN_CONFIG_B300_FP8_MX_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_B300_V1
+
+
+# =============================================================================
+# NVFP4 — Blackwell only (SM100+)
+# H100 does not support NVFP4; no H100 config here.
+# =============================================================================
+
+GEMMA4_E4B_PRETRAIN_CONFIG_GB200_NVFP4_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_GB200_V1
+GEMMA4_E4B_PRETRAIN_CONFIG_GB300_NVFP4_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_GB300_V1
+GEMMA4_E4B_PRETRAIN_CONFIG_B200_NVFP4_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_B200_V1
+GEMMA4_E4B_PRETRAIN_CONFIG_B300_NVFP4_V1 = GEMMA4_E4B_PRETRAIN_CONFIG_B300_V1
+
+
 __all__ = [
-    # V1 (initial HYPOTHESIS configs)
-    "GEMMA4_E4B_PRETRAIN_CONFIG_GB300_BF16_V1",
+    # BF16 (Hopper and Blackwell)
+    "GEMMA4_E4B_PRETRAIN_CONFIG_H100_BF16_V1",
     "GEMMA4_E4B_PRETRAIN_CONFIG_GB200_BF16_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_GB300_BF16_V1",
     "GEMMA4_E4B_PRETRAIN_CONFIG_B200_BF16_V1",
     "GEMMA4_E4B_PRETRAIN_CONFIG_B300_BF16_V1",
-    "GEMMA4_E4B_PRETRAIN_CONFIG_H100_BF16_V1",
+    # FP8-CS (Hopper and Blackwell)
+    "GEMMA4_E4B_PRETRAIN_CONFIG_H100_FP8_CS_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_GB200_FP8_CS_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_GB300_FP8_CS_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_B200_FP8_CS_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_B300_FP8_CS_V1",
+    # FP8-MX (Blackwell only)
+    "GEMMA4_E4B_PRETRAIN_CONFIG_GB200_FP8_MX_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_GB300_FP8_MX_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_B200_FP8_MX_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_B300_FP8_MX_V1",
+    # NVFP4 (Blackwell only)
+    "GEMMA4_E4B_PRETRAIN_CONFIG_GB200_NVFP4_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_GB300_NVFP4_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_B200_NVFP4_V1",
+    "GEMMA4_E4B_PRETRAIN_CONFIG_B300_NVFP4_V1",
 ]

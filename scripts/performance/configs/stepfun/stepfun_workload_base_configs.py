@@ -47,20 +47,22 @@ BASE_STEP35_196B_A11B_CONFIG = WorkloadBaseConfig(
 
 
 # =============================================================================
-# GB300 — HYPOTHESIS: TP=8, PP=2, EP=32, deepep backend
+# GB300 — HYPOTHESIS: TP=4, PP=2, EP=32, deepep backend
 # NVL-72 chassis; 256 GPUs expected for this topology.
 # HYPOTHESIS: same deepep backend as in the base recipe (no hybridep).
 # EP=32: 288 experts / 32 = 9 experts per EP rank (evenly divisible).
 # EP=64 was incorrect: 288 % 64 = 32 ≠ 0, causing an AssertionError in
 # moe_layer.py at model init.
+# TP=4, PP=2 → DP = 256 / (4 × 2) = 32; EP=32 ≤ DP=32 ✓
+# (TP=8 was invalid: DP=16 < EP=32 would crash at model init.)
 # =============================================================================
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_GB300_V1 = replace(
     BASE_STEP35_196B_A11B_CONFIG,
     # HYPOTHESIS: 256 GPUs (4 NVL-72 nodes)
     num_gpus=256,
-    # HYPOTHESIS: TP=8 fills NVLink domain; PP=2 keeps pipeline shallow
-    tensor_model_parallel_size=8,
+    # HYPOTHESIS: TP=4, PP=2 → DP=32 = EP=32 (EP ≤ DP constraint satisfied)
+    tensor_model_parallel_size=4,
     pipeline_model_parallel_size=2,
     virtual_pipeline_model_parallel_size=None,
     # HYPOTHESIS: EP=32 — 288 experts / 32 = 9 per rank (evenly divisible)
@@ -82,17 +84,19 @@ STEP35_196B_A11B_PRETRAIN_CONFIG_GB300_BF16_V1 = STEP35_196B_A11B_PRETRAIN_CONFI
 
 
 # =============================================================================
-# GB200 — HYPOTHESIS: TP=8, PP=2, EP=32, deepep backend
+# GB200 — HYPOTHESIS: TP=4, PP=2, EP=32, deepep backend
 # Same node topology as GB300; precision variants differ.
 # EP=32: 288 experts / 32 = 9 experts per EP rank (evenly divisible).
+# TP=4, PP=2 → DP = 256 / (4 × 2) = 32; EP=32 ≤ DP=32 ✓
+# (TP=8 was invalid: DP=16 < EP=32 would crash at model init.)
 # =============================================================================
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_V1 = replace(
     BASE_STEP35_196B_A11B_CONFIG,
     # HYPOTHESIS: 256 GPUs
     num_gpus=256,
-    # HYPOTHESIS: TP=8, PP=2 — mirrors GB300 BF16 shape
-    tensor_model_parallel_size=8,
+    # HYPOTHESIS: TP=4, PP=2 → DP=32 = EP=32 (EP ≤ DP constraint satisfied)
+    tensor_model_parallel_size=4,
     pipeline_model_parallel_size=2,
     virtual_pipeline_model_parallel_size=None,
     # HYPOTHESIS: EP=32 — 288 experts / 32 = 9 per rank (evenly divisible)
@@ -113,17 +117,19 @@ STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_FP8_V1 = STEP35_196B_A11B_PRETRAIN_CONFIG
 
 
 # =============================================================================
-# B200 — HYPOTHESIS: TP=8, PP=4, EP=32, deepep backend
+# B200 — HYPOTHESIS: TP=2, PP=4, EP=32, deepep backend
 # Non-NVLink-72 Blackwell; smaller NVLink domain limits EP.
-# HYPOTHESIS: unverified — derived by analogy from GB200 shape with reduced EP.
+# HYPOTHESIS: unverified — derived by analogy from GB200 shape.
+# TP=2, PP=4 → DP = 256 / (2 × 4) = 32; EP=32 ≤ DP=32 ✓
+# (TP=8 was invalid: DP=8 < EP=32 would crash at model init.)
 # =============================================================================
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_B200_V1 = replace(
     BASE_STEP35_196B_A11B_CONFIG,
     # HYPOTHESIS: 256 GPUs
     num_gpus=256,
-    # HYPOTHESIS: TP=8, PP=4 to compensate for smaller memory per GPU
-    tensor_model_parallel_size=8,
+    # HYPOTHESIS: TP=2, PP=4 → DP=32 = EP=32 (EP ≤ DP constraint satisfied)
+    tensor_model_parallel_size=2,
     pipeline_model_parallel_size=4,
     virtual_pipeline_model_parallel_size=None,
     # HYPOTHESIS: EP=32 (smaller NVLink domain than NVL-72)
@@ -143,14 +149,16 @@ STEP35_196B_A11B_PRETRAIN_CONFIG_B200_BF16_V1 = STEP35_196B_A11B_PRETRAIN_CONFIG
 # =============================================================================
 # B300 — HYPOTHESIS: same topology as B200
 # HYPOTHESIS: unverified — B300 assumed similar to B200 until profiled.
+# TP=2, PP=4 → DP = 256 / (2 × 4) = 32; EP=32 ≤ DP=32 ✓
+# (TP=8 was invalid: DP=8 < EP=32 would crash at model init.)
 # =============================================================================
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_B300_V1 = replace(
     BASE_STEP35_196B_A11B_CONFIG,
     # HYPOTHESIS: 256 GPUs
     num_gpus=256,
-    # HYPOTHESIS: TP=8, PP=4 (same as B200)
-    tensor_model_parallel_size=8,
+    # HYPOTHESIS: TP=2, PP=4 → DP=32 = EP=32 (EP ≤ DP constraint satisfied; same as B200)
+    tensor_model_parallel_size=2,
     pipeline_model_parallel_size=4,
     virtual_pipeline_model_parallel_size=None,
     expert_model_parallel_size=32,

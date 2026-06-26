@@ -21,9 +21,12 @@ Each public function in this module is named following the convention used by
 
 so that the perf-benchmark driver can locate builders by string lookup.
 
-NOTE: The Gemma 4 E4B recipe uses transformer_impl="local" (non-TE).
-TE-specific fusions (``masked_softmax_fusion``, ``gradient_accumulation_fusion``,
-``apply_rope_fusion``) are disabled in the recipe and must not be re-enabled here.
+BF16 path: uses ``gemma4_e4b_pretrain_config`` (transformer_impl="local").
+FP8/NVFP4 path: uses ``gemma4_e4b_fp8_pretrain_config`` (transformer_impl=
+    "transformer_engine") which wires TEColumnParallelLinear throughout the
+    dense layer so the FP8/NVFP4 quantisation context has hooks to fire on.
+    Supported precision values: fp8_cs (Hopper+Blackwell), fp8_mx (Blackwell
+    only), nvfp4 (Blackwell only).
 
 NOTE: Gemma 4 uses SWA hybrid attention (window_attn_skip_freq=6).  Context
 parallelism with SWA has not been verified; CP=1 is enforced in all configs.
@@ -35,13 +38,17 @@ from utils.overrides import set_workload_base_configs
 from utils.precision import get_precision_config
 from utils.utils import get_workload_base_config
 
-from megatron.bridge.recipes.gemma.gemma4 import gemma4_e4b_pretrain_config as pretrain_config
+from megatron.bridge.recipes.gemma.gemma4 import (
+    gemma4_e4b_fp8_pretrain_config,
+    gemma4_e4b_pretrain_config,
+)
 from megatron.bridge.training.config import ConfigContainer
 
 
 logger = logging.getLogger(__name__)
 
 _MODEL_FAMILY_NAME = "gemma"
+_FP8_PRECISIONS = frozenset({"fp8_cs", "fp8_mx", "nvfp4"})
 
 
 def set_gemma4_common_configs(cfg: ConfigContainer) -> None:
@@ -55,9 +62,8 @@ def set_gemma4_common_configs(cfg: ConfigContainer) -> None:
     cfg.model.seq_length = 8192
     cfg.dataset.sequence_length = 8192
 
-    # Cross-entropy fusion: the E4B recipe sets cross_entropy_loss_fusion=True
-    # with cross_entropy_fusion_impl="native".  Keep native impl since the local
-    # (non-TE) spec does not support the TE cross-entropy kernel.
+    # Cross-entropy fusion: both BF16 and FP8 recipes use native impl.
+    # The TE cross-entropy kernel has known stability issues (flagged in MCore).
     cfg.model.cross_entropy_loss_fusion = True
     cfg.model.cross_entropy_fusion_impl = "native"
 
@@ -79,7 +85,8 @@ def get_gemma4_workload_config(
             e.g. ``"gemma4_e4b"``.
         gpu: Target GPU identifier, e.g. ``"h100"``, ``"gb200"``, ``"gb300"``,
             ``"b200"``, or ``"b300"``.
-        precision: Compute dtype string, e.g. ``"bf16"``.
+        precision: Compute dtype string, e.g. ``"bf16"``, ``"fp8_cs"``,
+            ``"fp8_mx"``, or ``"nvfp4"``.
         mock: Unused — present for API compatibility with the benchmark driver.
         config_variant: Workload base config variant label, e.g. ``"v1"``.
 
@@ -97,7 +104,10 @@ def get_gemma4_workload_config(
     )
     precision_config = get_precision_config(precision)
 
-    cfg = pretrain_config()
+    if precision in _FP8_PRECISIONS:
+        cfg = gemma4_e4b_fp8_pretrain_config()
+    else:
+        cfg = gemma4_e4b_pretrain_config()
     cfg.mixed_precision = precision_config
 
     cfg.model.pipeline_model_parallel_size = base_cfg.pipeline_model_parallel_size
