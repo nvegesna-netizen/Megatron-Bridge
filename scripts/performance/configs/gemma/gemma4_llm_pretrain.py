@@ -113,8 +113,12 @@ def get_gemma4_workload_config(
     cfg.model.pipeline_model_parallel_size = base_cfg.pipeline_model_parallel_size
     cfg.model.virtual_pipeline_model_parallel_size = base_cfg.virtual_pipeline_model_parallel_size
 
-    set_gemma4_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
+    # set_gemma4_common_configs must run AFTER set_workload_base_configs:
+    # _set_common_perf_overrides unconditionally sets cross_entropy_fusion_impl="te",
+    # and this override must be reverted to "native" for Gemma4 (the TE CE kernel
+    # has known stability issues flagged in MCore model_parallel_config.py).
+    set_gemma4_common_configs(cfg)
 
     return cfg
 

@@ -23,9 +23,16 @@ Config naming convention::
 
     STEP35_196B_A11B_{TASK}_CONFIG_{GPU}_{PRECISION}_{VERSION}
 
-All parallelism values below are HYPOTHESES based on model architecture and
-analogy to similarly-sized MoE models (DeepSeek-V3 / Kimi-K2).  They have
-NOT been verified on actual hardware and must be tuned before production use.
+Parallelism follows the recipe author's recommendation (step35.py docstring):
+    TP=1, PP=8, EP=8
+Context parallelism (CP) is kept at 1 despite the recipe suggesting CP=8:
+ring-attention with Step-3.5's per-layer sliding-window config deep-copies
+produces incorrect causal masks across CP ranks and is blocked by the
+validate_sweep_config guard in megatron_bridge_helpers.py.
+
+45 layers is not divisible by PP=8 (45/8=5.625), so all configs carry an
+explicit pp_layout: 5 stages of 6 decoder layers + 3 stages of 5 decoder
+layers (lighter at the embedding/loss boundary stages).
 
 Use ``--config_variant`` to select a variant.
 Use ``--list_config_variants`` to see available variants interactively.
@@ -47,60 +54,53 @@ BASE_STEP35_196B_A11B_CONFIG = WorkloadBaseConfig(
 
 
 # =============================================================================
-# GB300 — HYPOTHESIS: TP=4, PP=2, EP=32, deepep backend
-# NVL-72 chassis; 256 GPUs expected for this topology.
-# HYPOTHESIS: same deepep backend as in the base recipe (no hybridep).
-# EP=32: 288 experts / 32 = 9 experts per EP rank (evenly divisible).
-# EP=64 was incorrect: 288 % 64 = 32 ≠ 0, causing an AssertionError in
-# moe_layer.py at model init.
-# TP=4, PP=2 → DP = 256 / (4 × 2) = 32; EP=32 ≤ DP=32 ✓
-# (TP=8 was invalid: DP=16 < EP=32 would crash at model init.)
+# GB300 — TP=1, PP=8, EP=8 (recipe author recommendation)
+# NVL-72 chassis; 256 GPUs for this topology.
+# deepep backend matches the recipe default.
+# EP=8: 288 experts / 8 = 36 per EP rank (evenly divisible).
+# TP=1, PP=8 → DP = 256 / (1 × 8) = 32; EP=8 ≤ DP=32 ✓
+# 45 layers / PP=8 = 5.625 → non-uniform pp_layout required.
 # =============================================================================
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_GB300_V1 = replace(
     BASE_STEP35_196B_A11B_CONFIG,
-    # HYPOTHESIS: 256 GPUs (4 NVL-72 nodes)
     num_gpus=256,
-    # HYPOTHESIS: TP=4, PP=2 → DP=32 = EP=32 (EP ≤ DP constraint satisfied)
-    tensor_model_parallel_size=4,
-    pipeline_model_parallel_size=2,
+    tensor_model_parallel_size=1,
+    pipeline_model_parallel_size=8,
     virtual_pipeline_model_parallel_size=None,
-    # HYPOTHESIS: EP=32 — 288 experts / 32 = 9 per rank (evenly divisible)
-    expert_model_parallel_size=32,
-    # HYPOTHESIS: CP=1 (4096 seq_len does not require CP splitting)
+    # EP=8: 288 experts / 8 = 36 per rank (evenly divisible)
+    expert_model_parallel_size=8,
+    # CP=1: ring-attention + per-layer SWA config deep-copy produces incorrect
+    # causal masks; blocked by validate_sweep_config guard.
     context_parallel_size=1,
-    # HYPOTHESIS: GBS=2048, MBS=1 is a typical starting point for MoE pretrain
     global_batch_size=2048,
     micro_batch_size=1,
-    # deepep is the recipe default; keep it here so the config is self-describing
     moe_flex_dispatcher_backend="deepep",
     moe_a2a_overlap=False,
-    # HYPOTHESIS: selective recompute on MoE activation is a lightweight option
     recompute_modules=["moe_act"],
     cuda_graph_impl=None,
+    # 45 layers across 8 PP stages: 5 stages × 6 layers + 3 stages × 5 layers = 45.
+    # Boundary stages (embedding, loss) carry fewer layers.
+    pp_layout="Et*5|t*6|t*6|t*6|t*6|t*6|t*5|t*5L",
 )
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_GB300_BF16_V1 = STEP35_196B_A11B_PRETRAIN_CONFIG_GB300_V1
 
 
 # =============================================================================
-# GB200 — HYPOTHESIS: TP=4, PP=2, EP=32, deepep backend
+# GB200 — TP=1, PP=8, EP=8 (recipe author recommendation)
 # Same node topology as GB300; precision variants differ.
-# EP=32: 288 experts / 32 = 9 experts per EP rank (evenly divisible).
-# TP=4, PP=2 → DP = 256 / (4 × 2) = 32; EP=32 ≤ DP=32 ✓
-# (TP=8 was invalid: DP=16 < EP=32 would crash at model init.)
+# EP=8: 288 experts / 8 = 36 per EP rank (evenly divisible).
+# TP=1, PP=8 → DP = 256 / (1 × 8) = 32; EP=8 ≤ DP=32 ✓
 # =============================================================================
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_V1 = replace(
     BASE_STEP35_196B_A11B_CONFIG,
-    # HYPOTHESIS: 256 GPUs
     num_gpus=256,
-    # HYPOTHESIS: TP=4, PP=2 → DP=32 = EP=32 (EP ≤ DP constraint satisfied)
-    tensor_model_parallel_size=4,
-    pipeline_model_parallel_size=2,
+    tensor_model_parallel_size=1,
+    pipeline_model_parallel_size=8,
     virtual_pipeline_model_parallel_size=None,
-    # HYPOTHESIS: EP=32 — 288 experts / 32 = 9 per rank (evenly divisible)
-    expert_model_parallel_size=32,
+    expert_model_parallel_size=8,
     context_parallel_size=1,
     global_batch_size=2048,
     micro_batch_size=1,
@@ -108,32 +108,27 @@ STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_V1 = replace(
     moe_a2a_overlap=False,
     recompute_modules=["moe_act"],
     cuda_graph_impl=None,
+    pp_layout="Et*5|t*6|t*6|t*6|t*6|t*6|t*5|t*5L",
 )
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_BF16_V1 = STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_V1
 
-# HYPOTHESIS: FP8 variant — same topology as BF16; recipe-level precision config handles the rest.
+# FP8 variant — same topology as BF16; recipe-level precision config handles the rest.
 STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_FP8_V1 = STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_V1
 
 
 # =============================================================================
-# B200 — HYPOTHESIS: TP=2, PP=4, EP=32, deepep backend
-# Non-NVLink-72 Blackwell; smaller NVLink domain limits EP.
-# HYPOTHESIS: unverified — derived by analogy from GB200 shape.
-# TP=2, PP=4 → DP = 256 / (2 × 4) = 32; EP=32 ≤ DP=32 ✓
-# (TP=8 was invalid: DP=8 < EP=32 would crash at model init.)
+# B200 — TP=1, PP=8, EP=8 (recipe author recommendation)
+# TP=1, PP=8 → DP = 256 / (1 × 8) = 32; EP=8 ≤ DP=32 ✓
 # =============================================================================
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_B200_V1 = replace(
     BASE_STEP35_196B_A11B_CONFIG,
-    # HYPOTHESIS: 256 GPUs
     num_gpus=256,
-    # HYPOTHESIS: TP=2, PP=4 → DP=32 = EP=32 (EP ≤ DP constraint satisfied)
-    tensor_model_parallel_size=2,
-    pipeline_model_parallel_size=4,
+    tensor_model_parallel_size=1,
+    pipeline_model_parallel_size=8,
     virtual_pipeline_model_parallel_size=None,
-    # HYPOTHESIS: EP=32 (smaller NVLink domain than NVL-72)
-    expert_model_parallel_size=32,
+    expert_model_parallel_size=8,
     context_parallel_size=1,
     global_batch_size=2048,
     micro_batch_size=1,
@@ -141,27 +136,24 @@ STEP35_196B_A11B_PRETRAIN_CONFIG_B200_V1 = replace(
     moe_a2a_overlap=False,
     recompute_modules=["moe_act"],
     cuda_graph_impl=None,
+    pp_layout="Et*5|t*6|t*6|t*6|t*6|t*6|t*5|t*5L",
 )
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_B200_BF16_V1 = STEP35_196B_A11B_PRETRAIN_CONFIG_B200_V1
 
 
 # =============================================================================
-# B300 — HYPOTHESIS: same topology as B200
-# HYPOTHESIS: unverified — B300 assumed similar to B200 until profiled.
-# TP=2, PP=4 → DP = 256 / (2 × 4) = 32; EP=32 ≤ DP=32 ✓
-# (TP=8 was invalid: DP=8 < EP=32 would crash at model init.)
+# B300 — TP=1, PP=8, EP=8 (recipe author recommendation; same topology as B200)
+# TP=1, PP=8 → DP = 256 / (1 × 8) = 32; EP=8 ≤ DP=32 ✓
 # =============================================================================
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_B300_V1 = replace(
     BASE_STEP35_196B_A11B_CONFIG,
-    # HYPOTHESIS: 256 GPUs
     num_gpus=256,
-    # HYPOTHESIS: TP=2, PP=4 → DP=32 = EP=32 (EP ≤ DP constraint satisfied; same as B200)
-    tensor_model_parallel_size=2,
-    pipeline_model_parallel_size=4,
+    tensor_model_parallel_size=1,
+    pipeline_model_parallel_size=8,
     virtual_pipeline_model_parallel_size=None,
-    expert_model_parallel_size=32,
+    expert_model_parallel_size=8,
     context_parallel_size=1,
     global_batch_size=2048,
     micro_batch_size=1,
@@ -169,43 +161,40 @@ STEP35_196B_A11B_PRETRAIN_CONFIG_B300_V1 = replace(
     moe_a2a_overlap=False,
     recompute_modules=["moe_act"],
     cuda_graph_impl=None,
+    pp_layout="Et*5|t*6|t*6|t*6|t*6|t*6|t*5|t*5L",
 )
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_B300_BF16_V1 = STEP35_196B_A11B_PRETRAIN_CONFIG_B300_V1
 
 
 # =============================================================================
-# H100 — HYPOTHESIS: TP=8, PP=4, EP=32, GBS=8192
-# Requires more GPUs due to HBM capacity; full-recompute on select layers.
-# HYPOTHESIS: unverified — numbers are rough estimates pending actual profiling.
+# H100 — TP=1, PP=8, EP=8 (recipe author recommendation)
+# 1024 GPUs; larger fleet needed for HBM capacity at TP=1.
+# TP=1, PP=8 → DP = 1024 / (1 × 8) = 128; EP=8 ≤ DP=128 ✓
+# More aggressive recompute on H100 due to lower HBM capacity vs Blackwell.
 # =============================================================================
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_H100_V1 = replace(
     BASE_STEP35_196B_A11B_CONFIG,
-    # HYPOTHESIS: 1024 GPUs at TP=8, PP=4, EP=32
     num_gpus=1024,
-    # HYPOTHESIS: TP=8, PP=4 needed for memory on 80 GB HBM
-    tensor_model_parallel_size=8,
-    pipeline_model_parallel_size=4,
+    tensor_model_parallel_size=1,
+    pipeline_model_parallel_size=8,
     virtual_pipeline_model_parallel_size=None,
-    # HYPOTHESIS: EP=32 across nodes; deepep still valid on H100
-    expert_model_parallel_size=32,
+    expert_model_parallel_size=8,
     context_parallel_size=1,
-    # HYPOTHESIS: larger GBS to amortize pipeline bubbles over more GPUs
     global_batch_size=8192,
     micro_batch_size=1,
     moe_flex_dispatcher_backend="deepep",
     moe_a2a_overlap=False,
-    # HYPOTHESIS: more aggressive recompute on H100 due to lower HBM capacity
     recompute_modules=["moe_act", "mlp"],
     cuda_graph_impl=None,
+    pp_layout="Et*5|t*6|t*6|t*6|t*6|t*6|t*5|t*5L",
 )
 
 STEP35_196B_A11B_PRETRAIN_CONFIG_H100_BF16_V1 = STEP35_196B_A11B_PRETRAIN_CONFIG_H100_V1
 
 
 __all__ = [
-    # V1 (initial HYPOTHESIS configs)
     "STEP35_196B_A11B_PRETRAIN_CONFIG_GB300_BF16_V1",
     "STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_BF16_V1",
     "STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_FP8_V1",

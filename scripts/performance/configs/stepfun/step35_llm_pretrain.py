@@ -92,6 +92,9 @@ def step35_196b_a11b_pretrain_config_gb300(
     set_step35_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
 
+    if base_cfg.pp_layout:
+        cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
+
     return cfg
 
 
@@ -128,6 +131,9 @@ def step35_196b_a11b_pretrain_config_gb200(
 
     set_step35_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
+
+    if base_cfg.pp_layout:
+        cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
 
     return cfg
 
@@ -170,6 +176,9 @@ def step35_196b_a11b_pretrain_config_b200(
     set_step35_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
 
+    if base_cfg.pp_layout:
+        cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
+
     return cfg
 
 
@@ -211,6 +220,9 @@ def step35_196b_a11b_pretrain_config_b300(
     set_step35_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
 
+    if base_cfg.pp_layout:
+        cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
+
     return cfg
 
 
@@ -251,6 +263,9 @@ def step35_196b_a11b_pretrain_config_h100(
 
     set_step35_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
+
+    if base_cfg.pp_layout:
+        cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
 
     # Disabling to avoid functional errors on H100.
     # TODO: Test with it enabled and keep it enabled if it works.
