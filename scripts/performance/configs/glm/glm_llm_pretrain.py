@@ -183,6 +183,9 @@ def _glm45_pretrain_config_for_gpu(
     # Re-apply after set_workload_base_configs to override _set_common_perf_overrides.
     set_glm45_common_configs(cfg)
 
+    if cfg.mixed_precision.fp8_recipe == "mxfp8":
+        cfg.model.fp8_output_proj = True
+
     cfg.comm_overlap.overlap_grad_reduce = True
 
     return cfg

@@ -126,6 +126,7 @@ GLM52_753B_PRETRAIN_CONFIG_B300 = replace(
     pp_layout="Et*4|(t*5|)*14t*4L",
     # EP=8: TP=2, PP=16, 256 GPUs — DP = 256/(2×16) = 8; EP=8 ≤ DP=8. DP%EP = 0 ✓
     expert_model_parallel_size=8,
+    moe_flex_dispatcher_backend="deepep",
     moe_a2a_overlap=False,
     recompute_modules=["mla_up_proj"],
 )
@@ -147,6 +148,7 @@ GLM52_753B_PRETRAIN_CONFIG_B200 = replace(
     pp_layout="Et*4|(t*5|)*14t*4L",
     # EP=8: TP=2, PP=16, 256 GPUs — DP = 256/(2×16) = 8; EP=8 ≤ DP=8. DP%EP = 0 ✓
     expert_model_parallel_size=8,
+    moe_flex_dispatcher_backend="deepep",
     moe_a2a_overlap=False,
     recompute_modules=["mla_up_proj"],
 )
