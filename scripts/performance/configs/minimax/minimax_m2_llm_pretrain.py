@@ -123,7 +123,9 @@ def minimax_m2_229b_a10b_pretrain_config_gb300(
         from model architecture.  GB300 has higher TFLOPs but same NVLink
         domain topology as GB200.
     """
-    return get_minimax_m2_workload_config(gpu="gb300", precision=precision, config_variant=config_variant)
+    cfg = get_minimax_m2_workload_config(gpu="gb300", precision=precision, config_variant=config_variant)
+    cfg.comm_overlap.overlap_grad_reduce = True
+    return cfg
 
 
 def minimax_m2_229b_a10b_pretrain_config_gb200(
@@ -144,7 +146,9 @@ def minimax_m2_229b_a10b_pretrain_config_gb200(
         Parallelism settings are HYPOTHESES: not benchmarked, topology derived
         from model architecture.  NVL72 chassis; hybridep backend.
     """
-    return get_minimax_m2_workload_config(gpu="gb200", precision=precision, config_variant=config_variant)
+    cfg = get_minimax_m2_workload_config(gpu="gb200", precision=precision, config_variant=config_variant)
+    cfg.comm_overlap.overlap_grad_reduce = True
+    return cfg
 
 
 def minimax_m2_229b_a10b_pretrain_config_b200(
@@ -165,7 +169,9 @@ def minimax_m2_229b_a10b_pretrain_config_b200(
         Parallelism settings are HYPOTHESES: not benchmarked, topology derived
         from model architecture.  Same topology as H100 for non-NVL72 Blackwell.
     """
-    return get_minimax_m2_workload_config(gpu="b200", precision=precision, config_variant=config_variant)
+    cfg = get_minimax_m2_workload_config(gpu="b200", precision=precision, config_variant=config_variant)
+    cfg.comm_overlap.overlap_grad_reduce = True
+    return cfg
 
 
 def minimax_m2_229b_a10b_pretrain_config_b300(
@@ -186,7 +192,9 @@ def minimax_m2_229b_a10b_pretrain_config_b300(
         Parallelism settings are HYPOTHESES: not benchmarked, topology derived
         from model architecture.  Same topology as GB200.
     """
-    return get_minimax_m2_workload_config(gpu="b300", precision=precision, config_variant=config_variant)
+    cfg = get_minimax_m2_workload_config(gpu="b300", precision=precision, config_variant=config_variant)
+    cfg.comm_overlap.overlap_grad_reduce = True
+    return cfg
 
 
 def minimax_m2_229b_a10b_pretrain_config_h100(

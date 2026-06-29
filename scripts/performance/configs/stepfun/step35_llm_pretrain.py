@@ -95,6 +95,7 @@ def step35_196b_a11b_pretrain_config_gb300(
     if base_cfg.pp_layout:
         cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
 
+    cfg.comm_overlap.overlap_grad_reduce = True
     return cfg
 
 
@@ -135,6 +136,7 @@ def step35_196b_a11b_pretrain_config_gb200(
     if base_cfg.pp_layout:
         cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
 
+    cfg.comm_overlap.overlap_grad_reduce = True
     return cfg
 
 
@@ -179,6 +181,7 @@ def step35_196b_a11b_pretrain_config_b200(
     if base_cfg.pp_layout:
         cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
 
+    cfg.comm_overlap.overlap_grad_reduce = True
     return cfg
 
 
@@ -223,6 +226,7 @@ def step35_196b_a11b_pretrain_config_b300(
     if base_cfg.pp_layout:
         cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
 
+    cfg.comm_overlap.overlap_grad_reduce = True
     return cfg
 
 

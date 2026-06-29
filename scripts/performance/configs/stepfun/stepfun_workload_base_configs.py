@@ -17,7 +17,7 @@
 Model: stepfun-ai/Step-3.5-Flash
 Architecture: 196B total params, ~11B activated per token, 45 layers,
 288 routed + 1 shared experts, top-8 routing, 3:1 SWA:full hybrid attention.
-Default dispatcher: moe_flex_dispatcher_backend="deepep" (as set in the recipe).
+Default dispatcher: hybridep for NVL-72 chassis (GB300/GB200); deepep for B200/B300/H100.
 
 Config naming convention::
 
@@ -56,7 +56,7 @@ BASE_STEP35_196B_A11B_CONFIG = WorkloadBaseConfig(
 # =============================================================================
 # GB300 — TP=1, PP=8, EP=8 (recipe author recommendation)
 # NVL-72 chassis; 256 GPUs for this topology.
-# deepep backend matches the recipe default.
+# hybridep: NVL-72 uses NVLink fabric for intra-domain expert dispatch.
 # EP=8: 288 experts / 8 = 36 per EP rank (evenly divisible).
 # TP=1, PP=8 → DP = 256 / (1 × 8) = 32; EP=8 ≤ DP=32 ✓
 # 45 layers / PP=8 = 5.625 → non-uniform pp_layout required.
@@ -75,7 +75,7 @@ STEP35_196B_A11B_PRETRAIN_CONFIG_GB300_V1 = replace(
     context_parallel_size=1,
     global_batch_size=2048,
     micro_batch_size=1,
-    moe_flex_dispatcher_backend="deepep",
+    moe_flex_dispatcher_backend="hybridep",
     moe_a2a_overlap=False,
     recompute_modules=["moe_act"],
     cuda_graph_impl=None,
@@ -104,7 +104,7 @@ STEP35_196B_A11B_PRETRAIN_CONFIG_GB200_V1 = replace(
     context_parallel_size=1,
     global_batch_size=2048,
     micro_batch_size=1,
-    moe_flex_dispatcher_backend="deepep",
+    moe_flex_dispatcher_backend="hybridep",
     moe_a2a_overlap=False,
     recompute_modules=["moe_act"],
     cuda_graph_impl=None,

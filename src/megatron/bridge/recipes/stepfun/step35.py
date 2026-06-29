@@ -16,6 +16,7 @@ import torch
 
 from megatron.bridge import AutoBridge
 from megatron.bridge.recipes.common import _pretrain_common
+from megatron.bridge.training.comm_overlap import CommOverlapConfig
 from megatron.bridge.training.config import ConfigContainer
 from megatron.bridge.training.flex_dispatcher_backend import apply_flex_dispatcher_backend
 
@@ -101,6 +102,10 @@ def step35_196b_a11b_pretrain_config() -> ConfigContainer:
     cfg.ddp.check_for_nan_in_grad = True
     cfg.ddp.use_distributed_optimizer = True
     cfg.ddp.use_megatron_fsdp = False
+
+    # Communication overlap — TP=1 so tp_comm_overlap=False; per-GPU perf builders
+    # set overlap_grad_reduce based on hardware (True for Blackwell, False for H100).
+    cfg.comm_overlap = CommOverlapConfig(tp_comm_overlap=False)
 
     # MoE Force Load Balancing
     cfg.model.moe_router_force_load_balancing = False
