@@ -77,7 +77,7 @@ def glm52_753b_pretrain_config() -> ConfigContainer:
     cfg.model.moe_permute_fusion = True
     cfg.model.moe_grouped_gemm = True
     cfg.model.moe_router_force_load_balancing = False
-    cfg.model.moe_router_padding_for_fp8 = False
+    cfg.model.moe_router_padding_for_quantization = False
 
     cfg.train.train_iters = 1_000_000
     cfg.train.global_batch_size = 2048

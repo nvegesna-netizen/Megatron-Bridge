@@ -52,6 +52,12 @@ def set_glm52_common_configs(cfg: ConfigContainer) -> None:
     cfg.mixed_precision.grad_reduce_in_fp32 = False
     cfg.ddp.grad_reduce_in_fp32 = False
 
+    if (
+        cfg.model.moe_flex_dispatcher_backend == "hybridep"
+        and (cfg.mixed_precision.fp8 is not None or cfg.mixed_precision.fp4 is not None)
+    ):
+        cfg.model.moe_router_padding_for_quantization = True
+
 
 def _glm52_pretrain_config_for_gpu(
     gpu: str,

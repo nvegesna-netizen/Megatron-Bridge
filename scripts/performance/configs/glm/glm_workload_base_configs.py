@@ -69,15 +69,23 @@ GLM52_753B_PRETRAIN_CONFIG_GB300 = replace(
 )
 GLM52_753B_PRETRAIN_CONFIG_GB300_BF16 = GLM52_753B_PRETRAIN_CONFIG_GB300
 GLM52_753B_PRETRAIN_CONFIG_GB300_FP8_CS = GLM52_753B_PRETRAIN_CONFIG_GB300
+# fp8_dot_product_attention is intentionally absent: GLM-5.2 uses Dynamic Sparse
+# Attention (DSA), which does not follow the standard dense QK^T matmul path that
+# fp8_dot_product_attention quantizes.  Enabling it would be incorrect here.
 GLM52_753B_PRETRAIN_CONFIG_GB300_FP8_MX = replace(
     GLM52_753B_PRETRAIN_CONFIG_GB300,
     moe_a2a_overlap=True,
     cutedsl_fused_grouped_mlp=True,
+    # DSA requires module-level CG; "full_iteration" is incompatible with
+    # variable-length sparse attention patterns.  Declare explicitly so
+    # a future base-config change cannot silently regress this.
+    cuda_graph_impl="transformer_engine",
 )
 GLM52_753B_PRETRAIN_CONFIG_GB300_NVFP4 = replace(
     GLM52_753B_PRETRAIN_CONFIG_GB300,
     moe_a2a_overlap=True,
     cutedsl_fused_grouped_mlp=True,
+    cuda_graph_impl="transformer_engine",
 )
 
 
@@ -102,15 +110,21 @@ GLM52_753B_PRETRAIN_CONFIG_GB200 = replace(
 )
 GLM52_753B_PRETRAIN_CONFIG_GB200_BF16 = GLM52_753B_PRETRAIN_CONFIG_GB200
 GLM52_753B_PRETRAIN_CONFIG_GB200_FP8_CS = GLM52_753B_PRETRAIN_CONFIG_GB200
+# fp8_dot_product_attention intentionally omitted — DSA incompatibility (see GB300 note above).
 GLM52_753B_PRETRAIN_CONFIG_GB200_FP8_MX = replace(
     GLM52_753B_PRETRAIN_CONFIG_GB200,
     moe_a2a_overlap=True,
     cutedsl_fused_grouped_mlp=True,
+    # DSA requires module-level CG; "full_iteration" is incompatible with
+    # variable-length sparse attention patterns.  Declare explicitly so
+    # a future base-config change cannot silently regress this.
+    cuda_graph_impl="transformer_engine",
 )
 GLM52_753B_PRETRAIN_CONFIG_GB200_NVFP4 = replace(
     GLM52_753B_PRETRAIN_CONFIG_GB200,
     moe_a2a_overlap=True,
     cutedsl_fused_grouped_mlp=True,
+    cuda_graph_impl="transformer_engine",
 )
 
 
