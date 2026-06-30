@@ -64,8 +64,8 @@ def glm52_753b_pretrain_config() -> ConfigContainer:
     cfg.model.num_layers_in_first_pipeline_stage = None
     cfg.model.num_layers_in_last_pipeline_stage = None
 
-    # GLM-5.2 advertises one next-token prediction layer, but GLM5Bridge does
-    # not yet map MTP weights, so keep MTP off for trainable configs.
+    # GLM-5.2 has one MTP layer; keep it off for pretraining until MTP training
+    # has been validated end-to-end (conversion is supported via GLM5Bridge).
     cfg.model.mtp_num_layers = None
     cfg.model.mtp_loss_scaling_factor = None
 
