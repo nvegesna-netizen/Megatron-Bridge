@@ -21,8 +21,6 @@ from utils.utils import get_workload_base_config
 from megatron.bridge.recipes.kimi.kimi_k2 import _get_kimi_k2_pipeline_layout
 from megatron.bridge.recipes.kimi.kimi_k2 import kimi_k2_pretrain_config as pretrain_config
 from megatron.bridge.training.config import ConfigContainer
-from megatron.bridge.training.flex_dispatcher_backend import apply_flex_dispatcher_backend
-
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +80,6 @@ def kimi_k2_pretrain_config_gb300(
 
     if base_cfg.moe_flex_dispatcher_backend is not None:
         cfg.model.moe_flex_dispatcher_backend = base_cfg.moe_flex_dispatcher_backend
-    apply_flex_dispatcher_backend(cfg.model, cfg.model.moe_flex_dispatcher_backend)
 
     if base_cfg.pp_layout:
         cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
@@ -124,7 +121,6 @@ def kimi_k2_pretrain_config_gb200(
 
     if base_cfg.moe_flex_dispatcher_backend is not None:
         cfg.model.moe_flex_dispatcher_backend = base_cfg.moe_flex_dispatcher_backend
-    apply_flex_dispatcher_backend(cfg.model, cfg.model.moe_flex_dispatcher_backend)
 
     if base_cfg.pp_layout:
         cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
@@ -166,7 +162,6 @@ def kimi_k2_pretrain_config_vr200(
 
     if base_cfg.moe_flex_dispatcher_backend is not None:
         cfg.model.moe_flex_dispatcher_backend = base_cfg.moe_flex_dispatcher_backend
-    apply_flex_dispatcher_backend(cfg.model, cfg.model.moe_flex_dispatcher_backend)
 
     if base_cfg.pp_layout:
         cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
@@ -207,7 +202,6 @@ def kimi_k2_pretrain_config_b300(
 
     if base_cfg.moe_flex_dispatcher_backend is not None:
         cfg.model.moe_flex_dispatcher_backend = base_cfg.moe_flex_dispatcher_backend
-    apply_flex_dispatcher_backend(cfg.model, cfg.model.moe_flex_dispatcher_backend)
 
     if base_cfg.pp_layout:
         cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
@@ -248,7 +242,6 @@ def kimi_k2_pretrain_config_b200(
 
     if base_cfg.moe_flex_dispatcher_backend is not None:
         cfg.model.moe_flex_dispatcher_backend = base_cfg.moe_flex_dispatcher_backend
-    apply_flex_dispatcher_backend(cfg.model, cfg.model.moe_flex_dispatcher_backend)
 
     if base_cfg.pp_layout:
         cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
@@ -289,7 +282,6 @@ def kimi_k2_pretrain_config_h100(
 
     if base_cfg.moe_flex_dispatcher_backend is not None:
         cfg.model.moe_flex_dispatcher_backend = base_cfg.moe_flex_dispatcher_backend
-    apply_flex_dispatcher_backend(cfg.model, cfg.model.moe_flex_dispatcher_backend)
 
     if base_cfg.pp_layout:
         cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout

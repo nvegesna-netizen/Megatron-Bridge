@@ -78,7 +78,7 @@ def _glm52_pretrain_config_for_gpu(
 
     if base_cfg.moe_flex_dispatcher_backend is not None:
         cfg.model.moe_flex_dispatcher_backend = base_cfg.moe_flex_dispatcher_backend
-    apply_flex_dispatcher_backend(cfg.model, cfg.model.moe_flex_dispatcher_backend)
+        apply_flex_dispatcher_backend(cfg.model, cfg.model.moe_flex_dispatcher_backend)
 
     # Call common configs twice: once before set_workload_base_configs so recipe-
     # specific fields are initialised, and once after to re-apply overrides that
@@ -183,7 +183,7 @@ def _glm45_pretrain_config_for_gpu(
 
     if base_cfg.moe_flex_dispatcher_backend is not None:
         cfg.model.moe_flex_dispatcher_backend = base_cfg.moe_flex_dispatcher_backend
-    apply_flex_dispatcher_backend(cfg.model, cfg.model.moe_flex_dispatcher_backend)
+        apply_flex_dispatcher_backend(cfg.model, cfg.model.moe_flex_dispatcher_backend)
 
     set_workload_base_configs(cfg, base_cfg)
     # Re-apply after set_workload_base_configs to override _set_common_perf_overrides.
