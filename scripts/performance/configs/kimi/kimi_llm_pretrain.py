@@ -53,6 +53,12 @@ def set_kimi_k2_common_configs(cfg: ConfigContainer) -> None:
     cfg.model.moe_router_force_load_balancing = True
     cfg.model.qk_clip = False  # disable qk_clip for now, enable after MCORE fix drop in
 
+    if (
+        cfg.model.moe_flex_dispatcher_backend == "hybridep"
+        and (cfg.mixed_precision.fp8 is not None or cfg.mixed_precision.fp4 is not None)
+    ):
+        cfg.model.moe_router_padding_for_quantization = True
+
 
 def kimi_k2_pretrain_config_gb300(
     precision: str = "bf16",
@@ -133,6 +139,7 @@ def kimi_k2_pretrain_config_gb200(
     set_workload_base_configs(cfg, base_cfg)
 
     cfg.comm_overlap.overlap_grad_reduce = True
+    cfg.rng.te_rng_tracker = True
 
     return cfg
 
@@ -173,6 +180,7 @@ def kimi_k2_pretrain_config_vr200(
     set_workload_base_configs(cfg, base_cfg)
 
     cfg.comm_overlap.overlap_grad_reduce = True
+    cfg.rng.te_rng_tracker = True
 
     return cfg
 
@@ -297,5 +305,6 @@ def kimi_k2_pretrain_config_h100(
 
     # Disabling to avoid functional errors. TODO: Test with it enabled and keep it enabled if it works.
     cfg.comm_overlap.overlap_grad_reduce = False
+    cfg.rng.te_rng_tracker = True
 
     return cfg

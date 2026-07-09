@@ -45,6 +45,12 @@ def set_deepseek_v3_common_configs(cfg: ConfigContainer, moe_a2a_overlap: bool =
 
     cfg.model.moe_router_force_load_balancing = True
 
+    if (
+        cfg.model.moe_flex_dispatcher_backend == "hybridep"
+        and (cfg.mixed_precision.fp8 is not None or cfg.mixed_precision.fp4 is not None)
+    ):
+        cfg.model.moe_router_padding_for_quantization = True
+
 
 def set_full_iter_cg_configs(cfg: ConfigContainer) -> None:
     """Apply defaults required by full-iteration CUDA graph capture with dropless MoE.
@@ -163,6 +169,9 @@ def deepseek_v3_pretrain_config_vr200(
     cfg = pretrain_config()
     cfg.mixed_precision = precision_config
 
+    if cfg.mixed_precision.fp8_recipe == "mxfp8":
+        cfg.model.fp8_output_proj = True
+
     # Apply model-specific settings that were previously passed as constructor args
     cfg.model.pipeline_model_parallel_size = base_cfg.pipeline_model_parallel_size
     cfg.model.virtual_pipeline_model_parallel_size = base_cfg.virtual_pipeline_model_parallel_size
@@ -207,8 +216,11 @@ def deepseek_v3_pretrain_config_b300(
     cfg.model.pipeline_model_parallel_size = base_cfg.pipeline_model_parallel_size
     cfg.model.virtual_pipeline_model_parallel_size = base_cfg.virtual_pipeline_model_parallel_size
     cfg.model.moe_flex_dispatcher_backend = base_cfg.moe_flex_dispatcher_backend
-    # Recompute layout based on updated PP/VP sizes
-    set_deepseek_v3_pipeline_model_parallel_layout(cfg.model)
+    if base_cfg.pp_layout:
+        cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
+    else:
+        # Recompute layout based on updated PP/VP sizes
+        set_deepseek_v3_pipeline_model_parallel_layout(cfg.model)
 
     set_deepseek_v3_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
@@ -237,12 +249,18 @@ def deepseek_v3_pretrain_config_b200(
     cfg = pretrain_config()
     cfg.mixed_precision = precision_config
 
+    if cfg.mixed_precision.fp8_recipe == "mxfp8":
+        cfg.model.fp8_output_proj = True
+
     # Apply model-specific settings that were previously passed as constructor args
     cfg.model.pipeline_model_parallel_size = base_cfg.pipeline_model_parallel_size
     cfg.model.virtual_pipeline_model_parallel_size = base_cfg.virtual_pipeline_model_parallel_size
     cfg.model.moe_flex_dispatcher_backend = base_cfg.moe_flex_dispatcher_backend
-    # Recompute layout based on updated PP/VP sizes
-    set_deepseek_v3_pipeline_model_parallel_layout(cfg.model)
+    if base_cfg.pp_layout:
+        cfg.model.pipeline_model_parallel_layout = base_cfg.pp_layout
+    else:
+        # Recompute layout based on updated PP/VP sizes
+        set_deepseek_v3_pipeline_model_parallel_layout(cfg.model)
 
     set_deepseek_v3_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)

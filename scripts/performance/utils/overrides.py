@@ -124,7 +124,9 @@ def _set_cuda_graph_overrides(
         )
     elif recipe.model.cuda_graph_impl == "none":
         recipe.model.cuda_graph_scope = []
-        recipe.rng.te_rng_tracker = recipe.model.use_te_rng_tracker = False
+        vpp = getattr(recipe.model, "virtual_pipeline_model_parallel_size", None) or 1
+        if vpp <= 1:
+            recipe.rng.te_rng_tracker = recipe.model.use_te_rng_tracker = False
 
     if is_full_iteration_cuda_graph(recipe.model):
         recipe.rerun_state_machine.check_for_nan_in_loss = False

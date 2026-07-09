@@ -15,6 +15,24 @@ if HAVE_MEGATRON_BRIDGE:
         deepseek_v3_pretrain_config_vr200,
     )
 
+    # DeepSeek V4 builders require a DSv4-capable megatron-core (hyper_connection,
+    # csa/hybrid attention, moe_n_hash). Guarded import: on a stock mcore where
+    # those deps are absent, the V4 builders are simply not exported (V4 runs
+    # require a DSv4-capable image).
+    try:
+        from .deepseek_v4_llm_pretrain import (
+            deepseek_v4_pretrain_config_b200,
+            deepseek_v4_pretrain_config_b300,
+            deepseek_v4_pretrain_config_gb200,
+            deepseek_v4_pretrain_config_gb300,
+        )
+
+        _HAVE_DEEPSEEK_V4 = True
+    except (ImportError, ModuleNotFoundError):
+        _HAVE_DEEPSEEK_V4 = False
+else:
+    _HAVE_DEEPSEEK_V4 = False
+
 from .deepseek_workload_base_configs import (
     DEEPSEEK_V3_PRETRAIN_CONFIG_B200_BF16_V1,
     DEEPSEEK_V3_PRETRAIN_CONFIG_B200_BF16_V2,
@@ -70,6 +88,19 @@ from .deepseek_workload_base_configs import (
     DEEPSEEK_V3_PRETRAIN_CONFIG_VR200_FP8_MX_V2,
     DEEPSEEK_V3_PRETRAIN_CONFIG_VR200_NVFP4_V1,
     DEEPSEEK_V3_PRETRAIN_CONFIG_VR200_NVFP4_V2,
+)
+
+# DeepSeek V4 WorkloadBaseConfig constants — plain dataclasses (no megatron-core
+# dependency), safe to import unconditionally.
+from .deepseek_v4_workload_base_configs import (
+    DEEPSEEK_V4_PRETRAIN_CONFIG_B200_BF16_V1,
+    DEEPSEEK_V4_PRETRAIN_CONFIG_B200_FP8_MX_V1,
+    DEEPSEEK_V4_PRETRAIN_CONFIG_B300_BF16_V1,
+    DEEPSEEK_V4_PRETRAIN_CONFIG_B300_FP8_MX_V1,
+    DEEPSEEK_V4_PRETRAIN_CONFIG_GB200_BF16_V1,
+    DEEPSEEK_V4_PRETRAIN_CONFIG_GB200_FP8_MX_V1,
+    DEEPSEEK_V4_PRETRAIN_CONFIG_GB300_BF16_V1,
+    DEEPSEEK_V4_PRETRAIN_CONFIG_GB300_FP8_MX_V1,
 )
 
 
@@ -131,6 +162,15 @@ __all__ = [
     # FSDP
     "DEEPSEEK_V3_PRETRAIN_CONFIG_GB300_BF16_FSDP",
     "DEEPSEEK_V3_PRETRAIN_CONFIG_GB300_FP8_MX_FSDP",
+    # DeepSeek V4 (BF16 + FP8-MX, V1) — conservative functional baseline
+    "DEEPSEEK_V4_PRETRAIN_CONFIG_GB300_BF16_V1",
+    "DEEPSEEK_V4_PRETRAIN_CONFIG_GB300_FP8_MX_V1",
+    "DEEPSEEK_V4_PRETRAIN_CONFIG_GB200_BF16_V1",
+    "DEEPSEEK_V4_PRETRAIN_CONFIG_GB200_FP8_MX_V1",
+    "DEEPSEEK_V4_PRETRAIN_CONFIG_B300_BF16_V1",
+    "DEEPSEEK_V4_PRETRAIN_CONFIG_B300_FP8_MX_V1",
+    "DEEPSEEK_V4_PRETRAIN_CONFIG_B200_BF16_V1",
+    "DEEPSEEK_V4_PRETRAIN_CONFIG_B200_FP8_MX_V1",
 ]
 
 if HAVE_MEGATRON_BRIDGE:
@@ -142,5 +182,15 @@ if HAVE_MEGATRON_BRIDGE:
             "deepseek_v3_pretrain_config_b200",
             "deepseek_v3_pretrain_config_h100",
             "deepseek_v3_pretrain_config_vr200",
+        ]
+    )
+
+if _HAVE_DEEPSEEK_V4:
+    __all__.extend(
+        [
+            "deepseek_v4_pretrain_config_gb300",
+            "deepseek_v4_pretrain_config_gb200",
+            "deepseek_v4_pretrain_config_b300",
+            "deepseek_v4_pretrain_config_b200",
         ]
     )
