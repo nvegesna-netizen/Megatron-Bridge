@@ -216,11 +216,27 @@ class TestGLM5IndexerRopeInterleaveConvention:
         out[..., 1::2] = odd * cos + even * sin
         return out
 
+    @staticmethod
+    def _require_mla_interleaved_kwarg(fn) -> None:
+        """Skip if this mcore predates the mla_rotary_interleaved kwarg the fix relies on.
+
+        dsa.py forwards dsa_indexer_rope_interleaved as mla_rotary_interleaved, so a mcore
+        without that kwarg cannot run GLM-5.2's DSA indexer at all — nothing to validate here.
+        """
+        import inspect
+
+        if "mla_rotary_interleaved" not in inspect.signature(fn).parameters:
+            pytest.skip(
+                "mcore _apply_rotary_pos_emb_bshd lacks the mla_rotary_interleaved kwarg "
+                "(older than the DSA-indexer interleave API this fix depends on)"
+            )
+
     def test_interleaved_true_matches_hf_adjacent_pair_convention(self) -> None:
         import torch
 
         from megatron.core.models.common.embeddings.rope_utils import _apply_rotary_pos_emb_bshd
 
+        self._require_mla_interleaved_kwarg(_apply_rotary_pos_emb_bshd)
         torch.manual_seed(0)
         seq, batch, heads, dim = 5, 1, 2, 8  # dim = qk_pos_emb_head_dim-like, even
         half = dim // 2
@@ -246,6 +262,7 @@ class TestGLM5IndexerRopeInterleaveConvention:
 
         from megatron.core.models.common.embeddings.rope_utils import _apply_rotary_pos_emb_bshd
 
+        self._require_mla_interleaved_kwarg(_apply_rotary_pos_emb_bshd)
         torch.manual_seed(0)
         seq, batch, heads, dim = 5, 1, 2, 8
         half = dim // 2
