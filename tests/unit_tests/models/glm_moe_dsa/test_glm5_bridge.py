@@ -189,15 +189,11 @@ class TestGLM5DSAIndexerRope:
 
 
 class TestGLM5IndexerRopeInterleaveConvention:
-    """Numerical parity for the *effect* of the fix: what dsa_indexer_rope_interleaved
-    actually changes in the RoPE math (megatron.core dsa.py forwards it as
-    mla_rotary_interleaved into apply_rotary_pos_emb).
-
-    Full 753B GLM-5.2 forward-logit parity needs real weights + 256 GPUs, so this isolates
-    the RoPE-application layer on CPU: it proves megatron's interleaved path (True — what the
-    bridge now sets from HF indexer_rope_interleave=True) implements the HF ``rope_interleave``
-    adjacent-pair (real, imag) rotation, and the default False path (a half-split rotation)
-    does NOT — i.e. the flag is load-bearing, not cosmetic."""
+    """RoPE-convention parity for dsa_indexer_rope_interleaved (megatron.core dsa.py forwards
+    it as mla_rotary_interleaved into apply_rotary_pos_emb). The interleaved path (True) must
+    implement HF GLM-5.2's ``rope_interleave`` adjacent-pair (real, imag) rotation; the
+    half-split path (False) must not — the two settings are numerically distinct. Isolated to
+    the RoPE layer so it runs on CPU without model weights."""
 
     @staticmethod
     def _reference_interleaved_rope(t, theta):
@@ -218,7 +214,7 @@ class TestGLM5IndexerRopeInterleaveConvention:
 
     @staticmethod
     def _require_mla_interleaved_kwarg(fn) -> None:
-        """Skip if this mcore predates the mla_rotary_interleaved kwarg the fix relies on.
+        """Skip if this mcore lacks the mla_rotary_interleaved kwarg under test.
 
         dsa.py forwards dsa_indexer_rope_interleaved as mla_rotary_interleaved, so a mcore
         without that kwarg cannot run GLM-5.2's DSA indexer at all — nothing to validate here.
@@ -228,7 +224,7 @@ class TestGLM5IndexerRopeInterleaveConvention:
         if "mla_rotary_interleaved" not in inspect.signature(fn).parameters:
             pytest.skip(
                 "mcore _apply_rotary_pos_emb_bshd lacks the mla_rotary_interleaved kwarg "
-                "(older than the DSA-indexer interleave API this fix depends on)"
+                "under test (older than the DSA-indexer interleave API)"
             )
 
     def test_interleaved_true_matches_hf_adjacent_pair_convention(self) -> None:
@@ -271,12 +267,12 @@ class TestGLM5IndexerRopeInterleaveConvention:
 
         ref = self._reference_interleaved_rope(t, theta)
         freqs = torch.cat([theta, theta], dim=-1)[:, None, None, :]
-        # the mcore default (False) applies a half-split rotation — wrong for GLM-5.2
+        # False applies a half-split rotation, distinct from the adjacent-pair convention
         mega_noninterleaved = _apply_rotary_pos_emb_bshd(
             t, freqs, rotary_interleaved=False, mla_rotary_interleaved=False
         )
 
         assert not torch.allclose(ref, mega_noninterleaved, atol=1e-3), (
-            "default mla_rotary_interleaved=False must NOT match HF's interleaved RoPE "
-            "(otherwise the bridge fix would be a no-op)"
+            "mla_rotary_interleaved=False must be numerically distinct from HF's "
+            "adjacent-pair RoPE"
         )
