@@ -107,6 +107,14 @@ class GLM5Bridge(MegatronModelBridge):
         provider.mscale = 1.0
         provider.mscale_all_dim = 1.0
 
+        # MLA head dims: the generic mapping leaves qk_pos_emb_head_dim at qk_head_dim
+        # (192) for GLM-5.2, but the rope portion is qk_rope_head_dim (64) — the nope
+        # portion is qk_nope_head_dim (192). Setting qk_pos_emb_head_dim=192 breaks the
+        # DSA indexer, whose RotaryEmbedding uses qk_pos_emb_head_dim while its head dim
+        # is dsa_indexer_head_dim (128): the indexer rope split becomes [192, 128-192] =
+        # [192, -64] -> crash. Map it explicitly, matching deepseek_v4_bridge.
+        provider.qk_pos_emb_head_dim = hf_config.qk_rope_head_dim  # 64
+
         # DSA indexer params
         provider.experimental_attention_variant = "dsa"
         provider.dsa_indexer_head_dim = hf_config.index_head_dim
