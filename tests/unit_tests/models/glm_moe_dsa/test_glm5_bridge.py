@@ -186,3 +186,80 @@ class TestGLM5DSAIndexerRope:
             out = bridge.provider_bridge(hf_pretrained)
 
         assert out.qk_pos_emb_head_dim == 64
+
+
+class TestGLM5IndexerRopeInterleaveConvention:
+    """Numerical parity for the *effect* of the fix: what dsa_indexer_rope_interleaved
+    actually changes in the RoPE math (megatron.core dsa.py forwards it as
+    mla_rotary_interleaved into apply_rotary_pos_emb).
+
+    Full 753B GLM-5.2 forward-logit parity needs real weights + 256 GPUs, so this isolates
+    the RoPE-application layer on CPU: it proves megatron's interleaved path (True — what the
+    bridge now sets from HF indexer_rope_interleave=True) implements the HF ``rope_interleave``
+    adjacent-pair (real, imag) rotation, and the default False path (a half-split rotation)
+    does NOT — i.e. the flag is load-bearing, not cosmetic."""
+
+    @staticmethod
+    def _reference_interleaved_rope(t, theta):
+        """HF-style interleaved RoPE: rotate each adjacent (2j, 2j+1) pair by angle theta_j.
+
+        out[2j]   = t[2j]*cos - t[2j+1]*sin
+        out[2j+1] = t[2j+1]*cos + t[2j]*sin
+        """
+        import torch
+
+        cos = torch.cos(theta)[:, None, None, :]
+        sin = torch.sin(theta)[:, None, None, :]
+        even, odd = t[..., 0::2], t[..., 1::2]
+        out = torch.empty_like(t)
+        out[..., 0::2] = even * cos - odd * sin
+        out[..., 1::2] = odd * cos + even * sin
+        return out
+
+    def test_interleaved_true_matches_hf_adjacent_pair_convention(self) -> None:
+        import torch
+
+        from megatron.core.models.common.embeddings.rope_utils import _apply_rotary_pos_emb_bshd
+
+        torch.manual_seed(0)
+        seq, batch, heads, dim = 5, 1, 2, 8  # dim = qk_pos_emb_head_dim-like, even
+        half = dim // 2
+        t = torch.randn(seq, batch, heads, dim, dtype=torch.float32)
+        theta = torch.randn(seq, half, dtype=torch.float32)  # per-position, per-pair angle
+
+        ref = self._reference_interleaved_rope(t, theta)
+
+        # megatron's mla-interleaved path de-interleaves to [even.., odd..]; freqs repeat per half
+        freqs = torch.cat([theta, theta], dim=-1)[:, None, None, :]
+        mega = _apply_rotary_pos_emb_bshd(t, freqs, rotary_interleaved=False, mla_rotary_interleaved=True)
+        # un-shuffle megatron's [even', odd'] layout back to interleaved order for comparison
+        mega_interleaved = torch.empty_like(mega)
+        mega_interleaved[..., 0::2] = mega[..., :half]
+        mega_interleaved[..., 1::2] = mega[..., half:]
+
+        assert torch.allclose(ref, mega_interleaved, atol=1e-5), (
+            "mla_rotary_interleaved=True must reproduce HF's adjacent-pair RoPE"
+        )
+
+    def test_interleaved_false_does_not_match_hf_convention(self) -> None:
+        import torch
+
+        from megatron.core.models.common.embeddings.rope_utils import _apply_rotary_pos_emb_bshd
+
+        torch.manual_seed(0)
+        seq, batch, heads, dim = 5, 1, 2, 8
+        half = dim // 2
+        t = torch.randn(seq, batch, heads, dim, dtype=torch.float32)
+        theta = torch.randn(seq, half, dtype=torch.float32)
+
+        ref = self._reference_interleaved_rope(t, theta)
+        freqs = torch.cat([theta, theta], dim=-1)[:, None, None, :]
+        # the mcore default (False) applies a half-split rotation — wrong for GLM-5.2
+        mega_noninterleaved = _apply_rotary_pos_emb_bshd(
+            t, freqs, rotary_interleaved=False, mla_rotary_interleaved=False
+        )
+
+        assert not torch.allclose(ref, mega_noninterleaved, atol=1e-3), (
+            "default mla_rotary_interleaved=False must NOT match HF's interleaved RoPE "
+            "(otherwise the bridge fix would be a no-op)"
+        )
