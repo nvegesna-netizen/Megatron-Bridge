@@ -15,14 +15,32 @@
 """Unit tests for the GLM-5 MoE DSA bridge."""
 
 from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from megatron.bridge.models.conversion.model_bridge import MegatronModelBridge
 from megatron.bridge.models.conversion.param_mapping import AutoMapping, GatedMLPMapping, QKVMapping
 from megatron.bridge.models.glm_moe_dsa.glm5_bridge import GLM5Bridge
 
 
 pytestmark = pytest.mark.unit
+
+
+def _glm5_hf_config(*, indexer_rope_interleave: bool = True) -> SimpleNamespace:
+    """Minimal HF config with the fields GLM5Bridge.provider_bridge reads."""
+    return SimpleNamespace(
+        first_k_dense_replace=1,
+        num_hidden_layers=4,
+        moe_intermediate_size=1024,
+        n_shared_experts=1,
+        rope_parameters={"rope_theta": 8000000},
+        qk_rope_head_dim=64,
+        index_head_dim=128,
+        index_n_heads=64,
+        index_topk=2048,
+        indexer_rope_interleave=indexer_rope_interleave,
+    )
 
 
 @pytest.fixture
@@ -134,3 +152,37 @@ def test_mapping_registry_omits_mtp_mappings_without_nextn_layers() -> None:
     bridge.hf_config = SimpleNamespace(num_hidden_layers=4, num_nextn_predict_layers=0)
 
     assert all(not mapping.megatron_param.startswith("mtp.") for mapping in bridge.mapping_registry())
+
+
+class TestGLM5DSAIndexerRope:
+    """Regression: the DSA indexer applies RoPE with mla_rotary_interleaved =
+    dsa_indexer_rope_interleaved (megatron.core dsa.py), which defaults False.
+    GLM-5.2 trains the indexer with interleaved RoPE (HF indexer_rope_interleave=True),
+    and the generic CONFIG_MAPPING maps neither rope_interleave nor
+    indexer_rope_interleave — so the bridge must set it explicitly or the indexer
+    silently rotates non-interleaved (corrupts top-k selection at seq_len > topk)."""
+
+    @pytest.mark.parametrize("interleave", [True, False])
+    def test_provider_bridge_maps_indexer_rope_interleave(self, interleave: bool) -> None:
+        hf_pretrained = MagicMock()
+        hf_pretrained.config = _glm5_hf_config(indexer_rope_interleave=interleave)
+        provider = MagicMock()
+
+        bridge = GLM5Bridge.__new__(GLM5Bridge)
+        with patch.object(MegatronModelBridge, "provider_bridge", return_value=provider):
+            out = bridge.provider_bridge(hf_pretrained)
+
+        assert out.dsa_indexer_rope_interleaved is interleave
+
+    def test_provider_bridge_sets_qk_pos_emb_head_dim_to_rope_dim(self) -> None:
+        """qk_pos_emb_head_dim is the rope portion (qk_rope_head_dim=64), not qk_head_dim=192;
+        192 makes the indexer rope split [192, 128-192] and crashes."""
+        hf_pretrained = MagicMock()
+        hf_pretrained.config = _glm5_hf_config()
+        provider = MagicMock()
+
+        bridge = GLM5Bridge.__new__(GLM5Bridge)
+        with patch.object(MegatronModelBridge, "provider_bridge", return_value=provider):
+            out = bridge.provider_bridge(hf_pretrained)
+
+        assert out.qk_pos_emb_head_dim == 64

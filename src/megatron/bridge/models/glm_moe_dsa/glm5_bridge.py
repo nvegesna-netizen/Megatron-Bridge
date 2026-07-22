@@ -122,6 +122,13 @@ class GLM5Bridge(MegatronModelBridge):
         provider.dsa_indexer_topk = hf_config.index_topk
         provider.dsa_indexer_loss_coeff = 0.001
         provider.dsa_indexer_use_sparse_loss = True
+        # The DSA indexer applies RoPE with mla_rotary_interleaved=dsa_indexer_rope_interleaved
+        # (megatron.core dsa.py). That field defaults to False, but GLM-5.2 trains the indexer with
+        # interleaved RoPE (HF indexer_rope_interleave=True) and the generic CONFIG_MAPPING maps
+        # neither rope_interleave nor indexer_rope_interleave — so without this the indexer rotates
+        # non-interleaved. Harmless on short-seq/mock runs (index_topk selects all keys when
+        # seq_len<=topk), but corrupts top-k token selection on real weights at seq_len>topk.
+        provider.dsa_indexer_rope_interleaved = hf_config.indexer_rope_interleave
 
         return provider
 
