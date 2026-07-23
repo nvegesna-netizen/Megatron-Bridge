@@ -124,8 +124,14 @@ def _set_cuda_graph_overrides(
         )
     elif recipe.model.cuda_graph_impl == "none":
         recipe.model.cuda_graph_scope = []
+        # mcore only *requires* the TE RNG tracker for CUDA graphs (arguments.py auto-enable,
+        # gpt_provider.py assert), so stripping it here is a fidelity choice, not a crash guard.
+        # Keep it on when a recipe wants it: an interleaved pipeline (VPP>1, coherent per-microbatch
+        # RNG) or an MTP head (recipes such as deepseek_v4 / glm45 deliberately enable it). Only
+        # disable in the plain DDP, no-MTP case, where the tracker is overhead with nothing to justify it.
         vpp = getattr(recipe.model, "virtual_pipeline_model_parallel_size", None) or 1
-        if vpp <= 1:
+        mtp = getattr(recipe.model, "mtp_num_layers", None) or 0
+        if vpp <= 1 and mtp == 0:
             recipe.rng.te_rng_tracker = recipe.model.use_te_rng_tracker = False
 
     if is_full_iteration_cuda_graph(recipe.model):
