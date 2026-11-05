@@ -21,6 +21,7 @@ import sys
 from pathlib import Path
 
 from argument_parser import parse_cli_args
+from startup_guard import check_startup, record_stage
 
 
 logger = logging.getLogger(__name__)
@@ -95,6 +96,7 @@ def _apply_one_gpu_per_rank(recipe) -> None:
 def _exec_training(target_name: str) -> None:
     """Replace the bootstrap process with the selected training entrypoint."""
     target_path = Path(__file__).resolve().parent / target_name
+    record_stage("exec_training")
     os.execvpe(
         sys.executable,
         [sys.executable, str(target_path), *sys.argv[1:]],
@@ -104,12 +106,17 @@ def _exec_training(target_name: str) -> None:
 
 def main() -> None:
     """Prepare process settings, then execute one training entrypoint."""
-    parser = parse_cli_args()
-    args, cli_overrides = parser.parse_known_args()
-    recipe, target_name = _prepare_recipe_and_target(args, cli_overrides)
-    _apply_recipe_environment(recipe)
-    _apply_one_gpu_per_rank(recipe)
-    _exec_training(target_name)
+    check_startup()
+    try:
+        parser = parse_cli_args()
+        args, cli_overrides = parser.parse_known_args()
+        recipe, target_name = _prepare_recipe_and_target(args, cli_overrides)
+        _apply_recipe_environment(recipe)
+        _apply_one_gpu_per_rank(recipe)
+        _exec_training(target_name)
+    except Exception as error:
+        record_stage("bootstrap_failed", f"{type(error).__name__}: {error}")
+        raise
 
 
 if __name__ == "__main__":
