@@ -79,12 +79,14 @@ class _Trace:
         index = self.projection_calls
         self.projection_calls += 1
         name = f"projection{index:04d}"
-        self.upstream.projection_input(index, x.reshape(*x.shape[:2], -1), weight.reshape(-1, weight.shape[-1]))
+        if self.upstream.active:
+            self.upstream.projection_input(index, x.reshape(*x.shape[:2], -1), weight.reshape(-1, weight.shape[-1]))
         # Canonical logical shapes are the same for the old einsum and new helper.
         self.record("projection_input", name + ".x", x.reshape(*x.shape[:2], -1))
         self.record("projection_input", name + ".weight", weight.reshape(-1, weight.shape[-1]))
         result = original()
-        self.upstream.projection_output(index, result.reshape(*x.shape[:2], -1))
+        if self.upstream.active:
+            self.upstream.projection_output(index, result.reshape(*x.shape[:2], -1))
         self.record("projection_output", name, result.reshape(*x.shape[:2], -1))
         # Save one real operand set in iteration 1, before any CUDA graph capture.
         save = self.rank in (0, 4, 31) and self.step == 1 and index == 0

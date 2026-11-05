@@ -14,7 +14,6 @@ import tempfile
 from pathlib import Path
 
 import torch
-import transformer_engine_torch as tex
 from megatron.core import parallel_state
 from megatron.core.distributed import DistributedDataParallel, DistributedDataParallelConfig
 from megatron.core.transformer import TransformerConfig
@@ -65,6 +64,10 @@ class _Model(torch.nn.Module):
 
 def main() -> None:
     """Assert all evidence paths work before allowing any full-model launch."""
+    # Initialize TE's Python loader (via the imports above) before importing its
+    # binary extension. The private image does not expose it as a top-level file.
+    import transformer_engine_torch as tex
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--probe", required=True)
     parser.add_argument("--upstream", required=True)

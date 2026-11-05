@@ -2,7 +2,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import pytest
 import torch
@@ -65,6 +65,23 @@ def test_trace_is_bounded_and_does_not_change_outputs_or_gradients(tmp_path):
 @pytest.mark.unit
 def test_opaque_input_does_not_vacuously_match():
     assert PROBE.signature(object())["complete"] is False
+
+
+@pytest.mark.unit
+def test_inactive_upstream_does_not_compute_extra_canonical_reshape():
+    boundary = _load("boundary_probe", ROOT / "src/megatron/bridge/training/dsv4_numerics.py")
+    trace = boundary._Trace.__new__(boundary._Trace)
+    trace.rank, trace.step, trace.projection_calls = 2, 2, 0
+    trace.record = lambda *args: None
+
+    def unexpected(*args):
+        raise AssertionError("Inactive upstream callback must not run")
+
+    trace.upstream = SimpleNamespace(active=False, projection_input=unexpected, projection_output=unexpected)
+    x = torch.randn(2, 1, 4)
+    weight = torch.randn(4, 4)
+    expected = x + 1
+    assert trace._projection(lambda: expected, x, weight) is expected
 
 
 @pytest.mark.unit
