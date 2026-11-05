@@ -79,10 +79,12 @@ class _Trace:
         index = self.projection_calls
         self.projection_calls += 1
         name = f"projection{index:04d}"
+        self.upstream.projection_input(index, x.reshape(*x.shape[:2], -1), weight.reshape(-1, weight.shape[-1]))
         # Canonical logical shapes are the same for the old einsum and new helper.
         self.record("projection_input", name + ".x", x.reshape(*x.shape[:2], -1))
         self.record("projection_input", name + ".weight", weight.reshape(-1, weight.shape[-1]))
         result = original()
+        self.upstream.projection_output(index, result.reshape(*x.shape[:2], -1))
         self.record("projection_output", name, result.reshape(*x.shape[:2], -1))
         # Save one real operand set in iteration 1, before any CUDA graph capture.
         save = self.rank in (0, 4, 31) and self.step == 1 and index == 0
@@ -105,6 +107,9 @@ class _Trace:
         import megatron.core.transformer.experimental_attention_variant.deepseek_v4_hybrid_attention as attention
 
         source = Path(inspect.getfile(attention)).resolve()
+        from megatron.bridge.training.dsv4_upstream import UpstreamTrace
+
+        self.upstream = UpstreamTrace(self.directory, self.rank, self.model, attention)
         self._write(
             {
                 "kind": "runtime",
@@ -236,6 +241,8 @@ class _Trace:
         # Resolve only after the complete forward/backward/optimizer step, never
         # while the collective or the graph is still writing them.
         torch.cuda.synchronize()
+        if self.step == 1:
+            self.upstream.finish_iteration()
         events = self.pending + self.captured
         for seq, (signature, digest) in enumerate(events):
             self._write(
