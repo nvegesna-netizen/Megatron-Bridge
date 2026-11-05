@@ -909,6 +909,9 @@ def train_step(
         - num_zeros_in_grad: Number of zeros in gradient if available, None otherwise
         - max_attention_logit: Maximum attention logit if available, None otherwise
     """
+    from megatron.bridge.training import dsv4_numerics
+
+    dsv4_numerics.begin(model, optimizer, global_state.train_state.step + 1)
     cfg: ConfigContainer = global_state.cfg
     timers = global_state.timers
     model_config = get_model_config(model[0])
@@ -1090,6 +1093,7 @@ def train_step(
         if zero_token_step is not None:
             accumulate_zero_token_step(global_state, zero_token_step)
 
+        dsv4_numerics.end(loss_reduced, grad_norm, skipped_iter)
         return (
             loss_reduced,
             skipped_iter,
