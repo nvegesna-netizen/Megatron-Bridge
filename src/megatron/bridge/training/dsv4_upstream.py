@@ -145,9 +145,23 @@ class UpstreamTrace:
         self.seq += 1
 
     def _pre(self, name: str) -> Callable[..., None]:
-        def hook(module: torch.nn.Module, args: tuple[object, ...], kwargs: dict[str, object]) -> None:
+        def hook(
+            module: torch.nn.Module,
+            args: tuple[object, ...] | None,
+            kwargs: dict[str, object] | None = None,
+        ) -> None:
             if self.active:
-                self._record("module_input", name, {"args": args, "kwargs": kwargs})
+                if args is None or kwargs is None:
+                    # TEGroupedMLP emulates child pre-hooks as hook(child, None).
+                    # No intermediate input/output is materialized on that path.
+                    # Accept the callback without inventing an observed input.
+                    inputs: object = {
+                        "complete": False,
+                        "reason": "Emulated pre-hook has no materialized input/kwargs or child output boundary",
+                    }
+                else:
+                    inputs = {"args": args, "kwargs": kwargs}
+                self._record("module_input", name, inputs)
                 self._record("module_parameters", name, dict(module.named_parameters(recurse=False)))
 
         return hook

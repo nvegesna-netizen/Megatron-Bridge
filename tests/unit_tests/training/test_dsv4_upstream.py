@@ -68,6 +68,39 @@ def test_opaque_input_does_not_vacuously_match():
 
 
 @pytest.mark.unit
+def test_emulated_fused_pre_hook_preserves_values_and_marks_missing_inputs(tmp_path):
+    model = torch.nn.Sequential(torch.nn.Linear(8, 8))
+    attention = ModuleType("emulated_fixture_attention")
+    attention.__file__ = __file__
+    sys.modules[attention.__name__] = attention
+    x = torch.randn(2, 8, requires_grad=True)
+    reference = model(x)
+    reference.sum().backward()
+    expected_grads = [p.grad.clone() for p in model.parameters()]
+    model.zero_grad(set_to_none=True)
+    trace = PROBE.UpstreamTrace(tmp_path, 2, [model], attention)
+    # Same call contract as TEGroupedMLP's fused implementation. It must return
+    # None, keep existing hooks untouched, and never label missing inputs equal.
+    for callback in model[0]._forward_pre_hooks.values():
+        assert callback(model[0], None) is None
+    assert model[0]._forward_pre_hooks_with_kwargs
+    output = model(x)
+    output.sum().backward()
+    assert torch.equal(reference, output)
+    assert all(torch.equal(p.grad, expected) for p, expected in zip(model.parameters(), expected_grads))
+    for i in range(3):
+        trace.projection_input(i, x, model[0].weight)
+        trace.projection_output(i, output)
+    trace.finish_iteration()
+    rows = [json.loads(line) for line in (tmp_path / "upstream_rank00002.jsonl").read_text().splitlines()]
+    missing = [r for r in rows if r.get("phase") == "module_input" and r["occurrence"] == 0]
+    assert len(missing) == 1 and missing[0]["value"]["complete"] is False
+    assert any(r.get("phase") == "module_parameters" for r in rows)
+    assert trace.hooks == [] and not model[0]._forward_pre_hooks
+    assert COMPARE._incomplete(missing[0]["value"])
+
+
+@pytest.mark.unit
 def test_inactive_upstream_does_not_compute_extra_canonical_reshape():
     boundary = _load("boundary_probe", ROOT / "src/megatron/bridge/training/dsv4_numerics.py")
     trace = boundary._Trace.__new__(boundary._Trace)
